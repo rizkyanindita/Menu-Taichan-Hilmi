@@ -248,7 +248,7 @@ export default function MenuManager() {
 
                         {/* Submit Button */}
                         <Button type="submit" className="w-full py-3.5 text-base font-semibold shadow-lg hover:shadow-xl">
-                            💾 Simpan Menu
+                            💾 Simpan menu
                         </Button>
                     </div>
                 </form>
