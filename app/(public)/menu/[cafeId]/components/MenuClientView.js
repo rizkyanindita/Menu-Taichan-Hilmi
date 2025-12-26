@@ -5,14 +5,18 @@ import { db } from '@/lib/firebase';
 import MenuGrid from './MenuGrid';
 import PromoBanner from './PromoBanner';
 
-export default function MenuClientView({ initialItems, cafeId }) {
+export default function MenuClientView({ initialItems, cafeId, cafeName }) {
     const [items, setItems] = useState(initialItems);
+
+    const [cafeNameState, setCafeNameState] = useState(cafeName);
 
     // Listen to Real-time Changes
     useEffect(() => {
         const unsub = onSnapshot(doc(db, "menus", cafeId), (doc) => {
             if (doc.exists()) {
-                setItems(doc.data().items || []);
+                const data = doc.data();
+                setItems(data.items || []);
+                if (data.name) setCafeNameState(data.name);
             }
         }, (error) => {
             console.error("Realtime update error:", error);
@@ -45,7 +49,7 @@ export default function MenuClientView({ initialItems, cafeId }) {
     return (
         <main className="p-4 sm:p-6 max-w-7xl mx-auto">
             <div className="mb-6 sm:mb-8 text-center sm:text-left border-b pb-4">
-                <h2 className="text-2xl sm:text-3xl font-bold capitalize text-gray-800 px-2">Taichan Goreng Bang Boy</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold capitalize text-gray-800 px-2">{cafeNameState}</h2>
                 <p className="text-sm sm:text-base text-gray-500 mt-1">Buka 11.00 - 20.00</p>
                 <p className="text-sm sm:text-base text-gray-500 mt-1">Senin Tutup</p>
             </div>

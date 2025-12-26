@@ -1,123 +1,130 @@
 "use client";
-import Button from '@/components/Button';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Button from "@/components/Button";
 
 export default function LoginForm() {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
     const router = useRouter();
+
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    const validCredentials = {
+        owner: { password: "123", role: "owner" },
+        staff: { password: "123", role: "staff" },
+    };
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setError("");
 
-        // Static credentials for demo
-        const validCredentials = {
-            'owner': { password: '123', role: 'owner' },
-            'staff': { password: '123', role: 'staff' }
-        };
-
-        // Simulate delay for UX
-        await new Promise(r => setTimeout(r, 800));
+        // Simulate API delay
+        await new Promise((r) => setTimeout(r, 800));
 
         const user = validCredentials[username.toLowerCase()];
 
         if (user && user.password === password) {
-            console.log("Login successful:", username);
             router.push(`/dashboard?role=${user.role}`);
         } else {
-            alert('Invalid credentials! Try:\nOwner: owner / 123\nStaff: staff / 123');
+            setError("Password atau username salah");
+            setUsername("");
+            setPassword("");
         }
 
         setLoading(false);
     };
 
+    /* ======================
+       Tailwind Input Styles
+       ====================== */
+    const inputBase =
+        "w-full px-4 py-3.5 rounded-xl border text-gray-900 bg-white " +
+        "placeholder:text-gray-400 font-medium outline-none " +
+        "transition-all duration-200";
+
+    const inputNormal =
+        "border-gray-300 focus:border-primary focus:ring-4 focus:ring-primary/10";
+
+    const inputError =
+        "border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-200";
+
+    const inputDisabled = "opacity-60 cursor-not-allowed";
+
     return (
         <form onSubmit={handleLogin} className="space-y-6">
-            {/* Username Field */}
+            {/* Error Message */}
+            {error && (
+                <div
+                    role="alert"
+                    className="rounded-xl border border-red-300 bg-red-50 px-4 py-3
+                     text-sm font-semibold text-red-700"
+                >
+                    {error}
+                </div>
+            )}
+
+            {/* Username */}
             <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-800">
+                <label className="text-sm font-semibold text-gray-800">
                     Username
                 </label>
                 <input
                     type="text"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-4 py-3.5 text-gray-900 bg-white border-2 border-gray-200 rounded-xl 
-                             focus:ring-4 focus:ring-primary/10 focus:border-primary 
-                             outline-none transition-all duration-200 
-                             placeholder:text-gray-400 font-medium"
+                    disabled={loading}
+                    onChange={(e) => {
+                        setUsername(e.target.value);
+                        if (error) setError("");
+                    }}
+                    className={`${inputBase} ${error ? inputError : inputNormal
+                        } ${loading ? inputDisabled : ""}`}
                     placeholder="Masukkan Username Anda"
-                    required
                     autoComplete="username"
+                    required
                 />
             </div>
 
-            {/* Password Field */}
+            {/* Password */}
             <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-800">
+                <label className="text-sm font-semibold text-gray-800">
                     Password
                 </label>
                 <input
                     type="password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3.5 text-gray-900 bg-white border-2 border-gray-200 rounded-xl 
-                             focus:ring-4 focus:ring-primary/10 focus:border-primary 
-                             outline-none transition-all duration-200 
-                             placeholder:text-gray-400 font-medium"
+                    disabled={loading}
+                    onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (error) setError("");
+                    }}
+                    className={`${inputBase} ${error ? inputError : inputNormal
+                        } ${loading ? inputDisabled : ""}`}
                     placeholder="Masukkan Password Anda"
-                    required
                     autoComplete="current-password"
+                    required
                 />
             </div>
 
             {/* Submit Button */}
             <Button
                 type="submit"
-                className="w-full py-3.5 text-base font-semibold shadow-lg hover:shadow-xl"
                 disabled={loading}
+                className="w-full py-3.5 text-base font-semibold shadow-lg hover:shadow-xl"
             >
                 {loading ? (
-                    <div className="flex items-center justify-center gap-2">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span className="flex items-center justify-center gap-2">
+                        <span className="h-5 w-5 animate-spin rounded-full
+                             border-2 border-white border-t-transparent" />
                         Signing in...
-                    </div>
+                    </span>
                 ) : (
-                    'Sign In'
+                    "Sign In"
                 )}
             </Button>
-
-            {/* Demo Credentials Info */}
-            <div className="relative mt-6 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-100 rounded-xl">
-                <div className="absolute -top-3 left-4 px-2 bg-white">
-                    <span className="text-xs font-bold text-blue-900">🔑 Demo Credentials</span>
-                </div>
-                <div className="mt-2 space-y-1.5">
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-blue-900 w-14">Owner:</span>
-                        <code className="text-xs text-blue-700 bg-blue-100 px-2 py-0.5 rounded font-mono">
-                            owner
-                        </code>
-                        <span className="text-xs text-blue-600">/</span>
-                        <code className="text-xs text-blue-700 bg-blue-100 px-2 py-0.5 rounded font-mono">
-                            123
-                        </code>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-blue-900 w-14">Staff:</span>
-                        <code className="text-xs text-blue-700 bg-blue-100 px-2 py-0.5 rounded font-mono">
-                            staff
-                        </code>
-                        <span className="text-xs text-blue-600">/</span>
-                        <code className="text-xs text-blue-700 bg-blue-100 px-2 py-0.5 rounded font-mono">
-                            123
-                        </code>
-                    </div>
-                </div>
-            </div>
         </form>
-    )
+    );
 }

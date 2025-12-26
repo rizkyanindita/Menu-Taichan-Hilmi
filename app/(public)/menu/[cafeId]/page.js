@@ -9,9 +9,19 @@ async function getMenu(cafeId) {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-            return { success: true, items: docSnap.data().items || [] };
+            const data = docSnap.data();
+            return {
+                success: true,
+                items: data.items || [],
+                name: data.name || "Menu"
+            };
         } else {
-            return { success: false, error: 'not_found' };
+            // Return empty menu for new cafes instead of 404
+            return {
+                success: true,
+                items: [],
+                name: cafeId
+            };
         }
     } catch (error) {
         console.error("Error fetching menu:", error);
@@ -50,5 +60,5 @@ export default async function MenuPage({ params }) {
     }
 
     // Pass data to Client Component for Realtime Handling
-    return <MenuClientView initialItems={result.items} cafeId={cafeId} />;
+    return <MenuClientView initialItems={result.items} cafeId={cafeId} cafeName={result.name} />;
 }

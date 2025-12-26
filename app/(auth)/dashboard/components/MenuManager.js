@@ -131,16 +131,16 @@ export default function MenuManager() {
     }
 
     return (
-        <div className="bg-white p-6 rounded-2xl shadow-lg border-2 border-gray-100">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-lg border-2 border-gray-100">
             {/* Header */}
-            <div className="flex justify-between items-center mb-6 pb-4 border-b-2 border-gray-100">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b-2 border-gray-100">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-900">Menu Management</h2>
                     <p className="text-sm text-gray-500 mt-1">Kelola menu cafe Anda</p>
                 </div>
                 <Button
                     onClick={() => setIsAdding(!isAdding)}
-                    className="text-sm py-2.5 px-5 shadow-lg hover:shadow-xl"
+                    className="w-full sm:w-auto text-sm py-2.5 px-5 shadow-lg hover:shadow-xl justify-center"
                 >
                     {isAdding ? '✕ Batal' : '+ Tambah Item'}
                 </Button>
@@ -269,42 +269,51 @@ export default function MenuManager() {
                         {items.map(item => (
                             <div
                                 key={item.id}
-                                className="flex items-center gap-4 p-4 bg-white hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 
+                                className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-white hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 
                                          rounded-xl transition-all duration-200 border-2 border-gray-100 hover:border-blue-200 
                                          hover:shadow-md group"
                             >
-                                {/* Image */}
-                                <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden relative flex-shrink-0 ring-2 ring-gray-200 group-hover:ring-primary/30">
-                                    <Image
-                                        src={item.image}
-                                        alt={item.name}
-                                        fill
-                                        className="object-cover"
-                                        sizes="64px"
-                                    />
-                                </div>
-
-                                {/* Info */}
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-bold text-gray-900 truncate">{item.name}</p>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-sm font-semibold text-primary">Rp {item.price.toLocaleString('id-ID')}</span>
-                                        {item.category && (
-                                            <>
-                                                <span className="text-gray-300">•</span>
-                                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                                                    {item.category}
-                                                </span>
-                                            </>
+                                {/* Content Wrapper */}
+                                <div className="flex items-center gap-4 flex-1 w-full">
+                                    {/* Image */}
+                                    <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden relative flex-shrink-0 ring-2 ring-gray-200 group-hover:ring-primary/30 flex items-center justify-center">
+                                        {(item.image && (item.image.startsWith('/') || item.image.startsWith('http'))) ? (
+                                            <Image
+                                                src={item.image}
+                                                alt={item.name}
+                                                fill
+                                                className="object-cover"
+                                                sizes="64px"
+                                            />
+                                        ) : (
+                                            <span className="text-[10px] text-gray-400 text-center px-1 font-medium leading-tight">
+                                                Tidak ada gambar
+                                            </span>
                                         )}
+                                    </div>
+
+                                    {/* Info */}
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-gray-900 truncate">{item.name}</p>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="text-sm font-semibold text-primary">Rp {item.price.toLocaleString('id-ID')}</span>
+                                            {item.category && (
+                                                <>
+                                                    <span className="text-gray-300 hidden sm:inline">•</span>
+                                                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                                        {item.category}
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
                                 {/* Actions */}
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 w-full sm:w-auto justify-end sm:justify-start">
                                     <button
                                         onClick={() => handleToggleStock(item)}
-                                        className={`px-3 py-2 text-xs font-bold rounded-lg transition-all border-2 
+                                        className={`flex-1 sm:flex-none px-3 py-2 text-xs font-bold rounded-lg transition-all border-2 justify-center flex items-center
                                             ${item.isSoldOut
                                                 ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
                                                 : 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
