@@ -56,13 +56,67 @@ export default function MenuClientView({ initialItems, cafeId, cafeName }) {
 
             <div className="space-y-6 sm:space-y-8">
                 {categories.map(category => (
-                    <div key={category}>
-                        <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 text-gray-800 px-1 border-l-4 border-primary pl-3">
-                            {category}
-                        </h3>
-                        <MenuGrid items={sortedItems.filter(i => i.category === category)} />
-                    </div>
+                    <section
+                        key={category}
+                        className="relative scroll-mt-28"
+                    >
+                        {/* CATEGORY WOODEN SIGN — WARM */}
+                        <div className="sticky top-6 z-20 mb-6 flex justify-center px-4">
+                            <div
+                                title={category}
+                                className="
+      relative
+      inline-flex items-center justify-center
+      max-w-[90%]
+      px-8 py-3
+      text-base sm:text-lg
+      font-extrabold uppercase
+      tracking-wide
+      text-white
+      truncate
+
+      bg-gradient-to-b from-amber-500 via-orange-500 to-orange-600
+      rounded-full
+      border border-orange-300/60
+
+      shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_12px_24px_rgba(0,0,0,0.25)]
+      [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]
+
+      before:content-['']
+      before:absolute
+      before:-left-3
+      before:top-1/2
+      before:-translate-y-1/2
+      before:w-4
+      before:h-4
+      before:rotate-45
+      before:bg-gradient-to-b from-amber-500 via-orange-500 to-orange-600
+      before:border-l before:border-b before:border-orange-300/60
+
+      after:content-['']
+      after:absolute
+      after:-right-3
+      after:top-1/2
+      after:-translate-y-1/2
+      after:w-4
+      after:h-4
+      after:rotate-45
+      after:bg-gradient-to-b from-amber-500 via-orange-500 to-orange-600
+      after:border-r after:border-t after:border-orange-300/60
+    "
+                            >
+                                {category}
+                            </div>
+                        </div>
+
+
+                        {/* MENU GRID */}
+                        <div className="mt-6">
+                            <MenuGrid items={sortedItems.filter(i => i.category === category)} />
+                        </div>
+                    </section>
                 ))}
+
             </div>
 
             <PromoBanner />

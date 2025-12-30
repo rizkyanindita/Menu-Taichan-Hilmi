@@ -4,6 +4,19 @@ import { useState } from "react";
 export default function MenuItem({ item }) {
     const [imageError, setImageError] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
+    const splitFirstSentence = (text = "") => {
+        if (!text) return { first: "", rest: "" };
+
+        const index = text.indexOf(".");
+        if (index === -1) {
+            return { first: text, rest: "" };
+        }
+
+        return {
+            first: text.slice(0, index + 1),
+            rest: text.slice(index + 1),
+        };
+    };
 
     return (
         <>
@@ -28,7 +41,10 @@ export default function MenuItem({ item }) {
                         </div>
 
                         <p className="text-xs sm:text-sm text-gray-500 line-clamp-2 leading-relaxed mb-2">
-                            {item.description}
+                            <span className="font-bold text-gray-900">
+                                {splitFirstSentence(item.description).first}
+                            </span>
+                            {splitFirstSentence(item.description).rest}
                         </p>
                     </div>
 
@@ -73,37 +89,39 @@ export default function MenuItem({ item }) {
                         </div>
                     )}
                 </div>
-            </div>
+            </div >
 
             {/* MODAL IMAGE */}
-            {isOpen && (
-                <div
-                    className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-                    onClick={() => setIsOpen(false)}
-                >
+            {
+                isOpen && (
                     <div
-                        className="relative max-w-3xl w-full"
-                        onClick={(e) => e.stopPropagation()}
+                        className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+                        onClick={() => setIsOpen(false)}
                     >
-                        {/* Close Button */}
-                        <button
-                            onClick={() => setIsOpen(false)}
-                            className="absolute -top-4 -right-4 bg-white text-black 
+                        <div
+                            className="relative max-w-3xl w-full"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Close Button */}
+                            <button
+                                onClick={() => setIsOpen(false)}
+                                className="absolute -top-4 -right-4 bg-white text-black 
                                        w-10 h-10 rounded-full flex items-center justify-center 
                                        shadow-lg text-xl font-bold"
-                        >
-                            ✕
-                        </button>
+                            >
+                                ✕
+                            </button>
 
-                        {/* Full Image */}
-                        <img
-                            src={item.image}
-                            alt={item.name}
-                            className="w-full max-h-[80vh] object-contain rounded-xl bg-white"
-                        />
+                            {/* Full Image */}
+                            <img
+                                src={item.image}
+                                alt={item.name}
+                                className="w-full max-h-[80vh] object-contain rounded-xl bg-white"
+                            />
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
         </>
     );
 }
