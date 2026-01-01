@@ -1,125 +1,142 @@
-"use client";
+'use client';
+
 import { useState, useEffect } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import MenuGrid from './MenuGrid';
+import { doc, onSnapshot } from 'firebase/firestore';
+import MenuItem from './MenuItem';
 import PromoBanner from './PromoBanner';
+import Skeleton from './Skeleton';
 
 export default function MenuClientView({ initialItems, cafeId, cafeName }) {
     const [items, setItems] = useState(initialItems);
+    const [loading, setLoading] = useState(!initialItems || initialItems.length === 0);
+    const [selectedCategory, setSelectedCategory] = useState("ALL");
 
-    const [cafeNameState, setCafeNameState] = useState(cafeName);
-
-    // Listen to Real-time Changes
     useEffect(() => {
-        const unsub = onSnapshot(doc(db, "menus", cafeId), (doc) => {
-            if (doc.exists()) {
-                const data = doc.data();
-                setItems(data.items || []);
-                if (data.name) setCafeNameState(data.name);
+        const docRef = doc(db, "menus", cafeId);
+        const unsub = onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists()) {
+                setItems(docSnap.data().items || []);
             }
+            setLoading(false);
         }, (error) => {
-            console.error("Realtime update error:", error);
+            console.error("Firestore error:", error);
+            setLoading(false);
         });
         return () => unsub();
     }, [cafeId]);
 
-    // Sort items: Available first, Sold Out last
-    const sortedItems = [...items].sort((a, b) => {
-        if (a.isSoldOut === b.isSoldOut) return 0;
-        return a.isSoldOut ? 1 : -1;
-    });
+    const allCategories = [...new Set(items.map(item => item.category))].sort();
+    const filteredItems = selectedCategory === "ALL"
+        ? items
+        : items.filter(item => item.category === selectedCategory);
 
-    // Group by category
-    const categories = [...new Set(sortedItems.map(item => item.category))];
+    const displayCategories = selectedCategory === "ALL"
+        ? allCategories
+        : [selectedCategory];
 
-    if (items.length === 0) {
+    if (loading) {
         return (
-            <main className="p-4 max-w-2xl mx-auto min-h-screen flex items-center justify-center">
-                <div className="text-center bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-8 max-w-md">
-                    <div className="text-6xl mb-4">📋</div>
-                    <h2 className="text-2xl font-bold text-yellow-900 mb-2">Menu Kosong</h2>
-                    <p className="text-yellow-700">Belum ada item di menu ini.</p>
-                    <p className="text-sm text-yellow-600 mt-2">Silakan tambahkan menu melalui dashboard.</p>
-                </div>
-            </main>
+            <div className="bg-white min-h-screen p-4 space-y-4 max-w-md mx-auto">
+                <div className="h-8 bg-gray-100 rounded-lg w-1/2 mx-auto mb-8 animate-pulse"></div>
+                {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} />)}
+            </div>
         );
     }
 
     return (
-        <main className="p-4 sm:p-6 max-w-7xl mx-auto">
-            <div className="mb-6 sm:mb-8 text-center sm:text-left border-b pb-4">
-                <h2 className="text-2xl sm:text-3xl font-bold capitalize text-gray-800 px-2">{cafeNameState}</h2>
-                <p className="text-sm sm:text-base text-gray-500 mt-1">Buka 11.00 - 20.00</p>
-                <p className="text-sm sm:text-base text-gray-500 mt-1">Senin Tutup</p>
-            </div>
+        <div className="bg-white min-h-screen font-sans selection:bg-orange-100 flex flex-col items-center">
+            {/* BRAND HEADER */}
+            <header className="w-full pt-10 pb-6 text-center bg-white">
+                <h1 className="text-2xl font-black uppercase tracking-widest text-gray-900 px-4">
+                    {cafeName}
+                </h1>
+                <p className="text-[10px] text-gray-400 uppercase tracking-[0.4em] mt-1 pr-[0.4em]">
+                    Digital Menu Card
+                </p>
+            </header>
 
-            <div className="space-y-6 sm:space-y-8">
-                {categories.map(category => (
-                    <section
-                        key={category}
-                        className="relative scroll-mt-28"
-                    >
-                        {/* CATEGORY WOODEN SIGN — WARM */}
-                        <div className="sticky top-6 z-20 mb-6 flex justify-center px-4">
-                            <div
-                                title={category}
-                                className="
-      relative
-      inline-flex items-center justify-center
-      max-w-[90%]
-      px-8 py-3
-      text-base sm:text-lg
-      font-extrabold uppercase
-      tracking-wide
-      text-white
-      truncate
+            {/* UPGRADED CATEGORY NAV - High affordance for scrolling */}
+            <nav className="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-lg border-b border-gray-100 flex justify-center">
+                <div className="relative w-full max-w-2xl">
 
-      bg-gradient-to-b from-amber-500 via-orange-500 to-orange-600
-      rounded-full
-      border border-orange-300/60
+                    {/* Visual Hint: Scroll Indicator Arrows/Icons */}
+                    <div className="absolute left-1 top-1/2 -translate-y-1/2 z-20 pointer-events-none md:hidden text-gray-300 animate-pulse">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+                    </div>
 
-      shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_12px_24px_rgba(0,0,0,0.25)]
-      [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]
-
-      before:content-['']
-      before:absolute
-      before:-left-3
-      before:top-1/2
-      before:-translate-y-1/2
-      before:w-4
-      before:h-4
-      before:rotate-45
-      before:bg-gradient-to-b from-amber-500 via-orange-500 to-orange-600
-      before:border-l before:border-b before:border-orange-300/60
-
-      after:content-['']
-      after:absolute
-      after:-right-3
-      after:top-1/2
-      after:-translate-y-1/2
-      after:w-4
-      after:h-4
-      after:rotate-45
-      after:bg-gradient-to-b from-amber-500 via-orange-500 to-orange-600
-      after:border-r after:border-t after:border-orange-300/60
-    "
+                    <div className="flex items-center gap-2 p-4 px-6 overflow-x-auto no-scrollbar scroll-smooth">
+                        <button
+                            onClick={() => setSelectedCategory("ALL")}
+                            className={`min-h-[38px] px-6 py-2 rounded-xl text-xs font-black transition-all border whitespace-nowrap
+                                ${selectedCategory === "ALL"
+                                    ? 'bg-orange-600 text-white border-orange-600 shadow-lg shadow-orange-200 ring-2 ring-orange-100'
+                                    : 'bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100'
+                                }`}
+                        >
+                            SEMUA MENU
+                        </button>
+                        {allCategories.map((category) => (
+                            <button
+                                key={category}
+                                onClick={() => {
+                                    setSelectedCategory(category);
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                                className={`min-h-[38px] px-6 py-2 rounded-xl text-xs font-black transition-all border whitespace-nowrap uppercase
+                                    ${selectedCategory === category
+                                        ? 'bg-orange-600 text-white border-orange-600 shadow-lg shadow-orange-200 ring-2 ring-orange-100'
+                                        : 'bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100'
+                                    }`}
                             >
                                 {category}
-                            </div>
-                        </div>
+                            </button>
+                        ))}
+                        <div className="min-w-[40px] h-1 shrink-0"></div>
+                    </div>
 
+                    {/* Right Gradient & Hint */}
+                    <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white via-white/40 to-transparent z-10 pointer-events-none flex items-center justify-end pr-1 text-gray-300 animate-pulse md:hidden">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+                    </div>
+                </div>
+            </nav>
 
-                        {/* MENU GRID */}
-                        <div className="mt-6">
-                            <MenuGrid items={sortedItems.filter(i => i.category === category)} />
-                        </div>
-                    </section>
-                ))}
+            {/* MENU CONTENT */}
+            <main className="w-full max-w-2xl px-5 py-2 pb-32">
+                {items.length === 0 ? (
+                    <div className="py-24 text-center">
+                        <div className="text-4xl mb-4 opacity-20">🍽️</div>
+                        <p className="text-gray-400 text-sm font-medium">Menu belum tersedia.</p>
+                    </div>
+                ) : (
+                    displayCategories.map((category) => {
+                        const itemsInCategory = filteredItems.filter(i => i.category === category);
+                        if (itemsInCategory.length === 0) return null;
 
-            </div>
+                        return (
+                            <section key={category} className="mt-8 mb-4">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-600 whitespace-nowrap">
+                                        {category}
+                                    </h2>
+                                    <div className="flex-1 h-[2px] bg-orange-50"></div>
+                                </div>
+
+                                <div className="divide-y divide-gray-50">
+                                    {itemsInCategory
+                                        .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+                                        .map((item) => (
+                                            <MenuItem key={item.id} item={item} />
+                                        ))}
+                                </div>
+                            </section>
+                        );
+                    })
+                )}
+            </main>
 
             <PromoBanner />
-        </main>
+        </div>
     );
 }

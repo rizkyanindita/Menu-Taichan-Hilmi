@@ -10,11 +10,22 @@ export default function PromoBanner() {
         <>
             <button
                 onClick={() => setIsOpen(true)}
-                className="fixed bottom-6 right-6 z-40 bg-primary text-white p-4 rounded-full shadow-xl hover:bg-orange-600 transition-all hover:scale-110 active:scale-95"
-                aria-label="View Promo"
+                aria-label="Open menu image"
+                className="
+    fixed bottom-5 right-5 z-40
+    flex items-center gap-2
+    rounded-full bg-primary px-4 py-2
+    text-sm font-medium text-white
+    shadow-lg
+    transition-all
+    hover:bg-orange-600 hover:shadow-xl
+    active:scale-95
+  "
             >
-                <span className="text-xl">buka gambar menu</span>
+                <span className="text-base">📝</span>
+                <span>Buka semua menu</span>
             </button>
+
 
             {isOpen && (
                 <div
