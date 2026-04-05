@@ -11,6 +11,15 @@ export default function MenuManager() {
     const [isAdding, setIsAdding] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [selectedItem, setSelectedItem] = useState(null);
+    const [imageErrors, setImageErrors] = useState({});
+    const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+    const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+
+    const availableCategories = Array.from(new Set(items.map(item => item.category).filter(Boolean)));
+
+    const handleImageError = (id) => {
+        setImageErrors(prev => ({ ...prev, [id]: true }));
+    };
 
 
     // Form State
@@ -90,6 +99,8 @@ export default function MenuManager() {
 
             // Reset state
             setIsAdding(false);
+            setShowNewCategoryInput(false);
+            setIsCategoryDropdownOpen(false);
             setEditingItem(null);
             setNewItem({
                 name: '',
@@ -164,7 +175,13 @@ export default function MenuManager() {
                     <p className="text-sm text-gray-500 mt-1">Kelola menu cafe Anda</p>
                 </div>
                 <Button
-                    onClick={() => setIsAdding(!isAdding)}
+                    onClick={() => {
+                        setIsAdding(!isAdding);
+                        if (!isAdding) {
+                            setShowNewCategoryInput(false);
+                            setIsCategoryDropdownOpen(false);
+                        }
+                    }}
                     className="w-full sm:w-auto text-sm py-2.5 px-5 shadow-lg hover:shadow-xl justify-center"
                 >
                     {isAdding ? '✕ Batal' : '+ Tambah Item'}
@@ -224,17 +241,89 @@ export default function MenuManager() {
                                 <label className="block text-sm font-semibold text-gray-800">
                                     Kategori <span className="text-red-500">*</span>
                                 </label>
-                                <input
-                                    required
-                                    type="text"
-                                    placeholder="Coffee, Food, Pastry, etc"
-                                    className="w-full px-4 py-3 text-gray-900 bg-white border-2 border-gray-200 rounded-xl 
-                                             focus:ring-4 focus:ring-primary/10 focus:border-primary 
-                                             outline-none transition-all duration-200 
-                                             placeholder:text-gray-400 font-medium"
-                                    value={newItem.category}
-                                    onChange={e => setNewItem({ ...newItem, category: e.target.value })}
-                                />
+                                {showNewCategoryInput ? (
+                                    <div className="flex gap-2">
+                                        <input
+                                            required={showNewCategoryInput}
+                                            type="text"
+                                            placeholder="Nama kategori baru"
+                                            className="flex-1 px-4 py-3 w-full text-gray-900 bg-white border-2 border-gray-200 rounded-xl 
+                                                     focus:ring-4 focus:ring-primary/10 focus:border-primary 
+                                                     outline-none transition-all duration-200 
+                                                     placeholder:text-gray-400 font-medium"
+                                            value={newItem.category}
+                                            onChange={e => setNewItem({ ...newItem, category: e.target.value })}
+                                            autoFocus
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setShowNewCategoryInput(false);
+                                                setNewItem({ ...newItem, category: availableCategories[0] || '' });
+                                            }}
+                                            className="px-4 py-3 bg-gray-100 text-gray-600 font-semibold rounded-xl border-2 border-gray-200 hover:bg-gray-200 transition-all font-bold"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="relative">
+                                        <input 
+                                            type="text" 
+                                            required={!showNewCategoryInput} 
+                                            value={newItem.category} 
+                                            className="sr-only" 
+                                            onChange={() => {}} 
+                                            tabIndex={-1} 
+                                        />
+                                        
+                                        <div 
+                                            onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                                            className={`w-full px-4 py-3 bg-white border-2 rounded-xl 
+                                                     focus-within:ring-4 focus-within:ring-primary/10 focus-within:border-primary 
+                                                     outline-none transition-all duration-200 font-medium flex justify-between items-center cursor-pointer
+                                                     ${isCategoryDropdownOpen ? "border-primary ring-4 ring-primary/10" : "border-gray-200"}`}
+                                        >
+                                            <span className={`block w-full truncate pr-4 ${newItem.category ? "text-gray-900" : "text-gray-400"}`}>
+                                                {newItem.category || "Pilih Kategori"}
+                                            </span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#131313" viewBox="0 0 292.4 292.4" className={`flex-shrink-0 transition-transform duration-200 ${isCategoryDropdownOpen ? "rotate-180" : ""}`}>
+                                                <path d="M287 69.4a17.6 17.6 0 0 0-13-5.4H18.4c-5 0-9.3 1.8-12.9 5.4A17.6 17.6 0 0 0 0 82.2c0 5 1.8 9.3 5.4 12.9l128 127.9c3.6 3.6 7.8 5.4 12.8 5.4s9.2-1.8 12.8-5.4L287 95c3.5-3.5 5.4-7.8 5.4-12.8 0-5-1.9-9.2-5.5-12.8z"/>
+                                            </svg>
+                                        </div>
+
+                                        {isCategoryDropdownOpen && (
+                                            <>
+                                                <div className="fixed inset-0 z-10" onClick={() => setIsCategoryDropdownOpen(false)} />
+                                                <div className="absolute z-20 w-full mt-2 bg-white border-2 border-gray-100 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                                                    {availableCategories.map(cat => (
+                                                        <div 
+                                                            key={cat}
+                                                            onClick={() => {
+                                                                setNewItem({ ...newItem, category: cat });
+                                                                setIsCategoryDropdownOpen(false);
+                                                            }}
+                                                            className="px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-700 font-medium transition-colors border-b border-gray-50 last:border-0 truncate"
+                                                            title={cat}
+                                                        >
+                                                            {cat}
+                                                        </div>
+                                                    ))}
+                                                    <div 
+                                                        onClick={() => {
+                                                            setShowNewCategoryInput(true);
+                                                            setNewItem({ ...newItem, category: '' });
+                                                            setIsCategoryDropdownOpen(false);
+                                                        }}
+                                                        className="px-4 py-3 bg-blue-50 hover:bg-blue-100 cursor-pointer text-blue-600 font-bold transition-colors sticky bottom-0 border-t border-blue-100"
+                                                    >
+                                                        + Tambah Kategori Baru...
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -280,6 +369,8 @@ export default function MenuManager() {
                             type="button"
                             onClick={() => {
                                 setIsAdding(false);
+                                setShowNewCategoryInput(false);
+                                setIsCategoryDropdownOpen(false);
                                 setEditingItem(null);
                                 setNewItem({
                                     name: '',
@@ -326,18 +417,21 @@ export default function MenuManager() {
                                     <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden relative
                                         flex-shrink-0 ring-2 ring-gray-200 group-hover:ring-primary/30
                                         flex items-center justify-center">
-                                        {(item.image && (item.image.startsWith('/') || item.image.startsWith('http'))) ? (
+                                        {(item.image && !imageErrors[item.id] && (item.image.startsWith('/') || item.image.startsWith('http'))) ? (
                                             <Image
                                                 src={item.image}
                                                 alt={item.name}
                                                 fill
                                                 className="object-cover"
                                                 sizes="64px"
+                                                onError={() => handleImageError(item.id)}
                                             />
                                         ) : (
-                                            <span className="text-[10px] text-gray-400 text-center px-1 font-medium leading-tight">
-                                                Tidak ada gambar
-                                            </span>
+                                            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10 outline-none">
+                                                <span className="text-[10px] text-gray-400 text-center px-1 font-medium leading-tight">
+                                                    Belum ada gambar
+                                                </span>
+                                            </div>
                                         )}
                                     </div>
 
@@ -394,6 +488,7 @@ export default function MenuManager() {
                                     <button
                                         onClick={() => {
                                             setIsAdding(true);
+                                            setShowNewCategoryInput(!availableCategories.includes(item.category) && item.category !== '');
                                             setEditingItem(item);
                                             setNewItem({
                                                 name: item.name,
@@ -450,16 +545,17 @@ export default function MenuManager() {
 
 
                         <div className="w-full h-40 bg-gray-100 rounded-xl overflow-hidden mb-4 relative">
-                            {selectedItem.image ? (
+                            {(selectedItem.image && !imageErrors[selectedItem.id] && (selectedItem.image.startsWith('/') || selectedItem.image.startsWith('http'))) ? (
                                 <Image
                                     src={selectedItem.image}
                                     alt={selectedItem.name}
                                     fill
                                     className="object-cover"
+                                    onError={() => handleImageError(selectedItem.id)}
                                 />
                             ) : (
-                                <div className="flex items-center justify-center h-full text-gray-400">
-                                    Tidak ada gambar
+                                <div className="flex items-center justify-center h-full w-full bg-gray-100 text-gray-400 font-medium">
+                                    Belum ada gambar
                                 </div>
                             )}
                         </div>
