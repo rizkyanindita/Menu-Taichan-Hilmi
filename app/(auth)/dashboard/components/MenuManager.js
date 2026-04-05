@@ -320,13 +320,12 @@ export default function MenuManager() {
       rounded-xl transition-all duration-200 border-2 border-gray-100
       hover:border-blue-200 hover:shadow-md group cursor-pointer"
                             >
-                                {/* ROW */}
-                                <div className="flex items-center w-full gap-4">
-
+                                {/* MAIN CONTENT (IMAGE & INFO) */}
+                                <div className="flex items-center gap-4 w-full sm:w-auto flex-1 min-w-0">
                                     {/* IMAGE */}
                                     <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden relative
-        flex-shrink-0 ring-2 ring-gray-200 group-hover:ring-primary/30
-        flex items-center justify-center">
+                                        flex-shrink-0 ring-2 ring-gray-200 group-hover:ring-primary/30
+                                        flex items-center justify-center">
                                         {(item.image && (item.image.startsWith('/') || item.image.startsWith('http'))) ? (
                                             <Image
                                                 src={item.image}
@@ -348,10 +347,10 @@ export default function MenuManager() {
                                             {item.name}
                                         </p>
 
-                                        <div className="flex items-center gap-2 mt-1 min-w-0">
+                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
                                             {/* PRICE */}
                                             <span
-                                                className="text-sm font-semibold text-primary truncate max-w-[10ch] flex-shrink-0"
+                                                className="text-sm font-semibold text-primary"
                                                 title={`Rp ${item.price.toLocaleString('id-ID')}`}
                                             >
                                                 Rp {item.price.toLocaleString('id-ID')}
@@ -361,7 +360,7 @@ export default function MenuManager() {
                                             {item.category && (
                                                 <span
                                                     className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full
-                truncate max-w-[120px]"
+                                                    truncate max-w-[120px]"
                                                     title={item.category}
                                                 >
                                                     {item.category}
@@ -369,55 +368,55 @@ export default function MenuManager() {
                                             )}
                                         </div>
                                     </div>
+                                </div>
 
-                                    {/* ACTIONS */}
-                                    <div
-                                        className="flex gap-2 flex-shrink-0"
-                                        onClick={(e) => e.stopPropagation()}
+                                {/* ACTIONS */}
+                                <div
+                                    className="flex items-center gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-dashed border-gray-100 mt-1 sm:mt-0 w-full sm:w-auto"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <button
+                                        onClick={() => handleToggleStock(item)}
+                                        className={`
+                                            flex-1 sm:flex-none sm:w-[96px] h-9
+                                            flex items-center justify-center gap-1
+                                            text-xs font-bold rounded-lg
+                                            transition-all border-2
+                                            ${item.isSoldOut
+                                                ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                                                : 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
+                                            }
+                                        `}
                                     >
-                                        <button
-                                            onClick={() => handleToggleStock(item)}
-                                            className={`
-    w-[96px] h-9
-    flex items-center justify-center gap-1
-    text-xs font-bold rounded-lg
-    transition-all border-2
-    ${item.isSoldOut
-                                                    ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
-                                                    : 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
-                                                }
-  `}
-                                        >
-                                            {item.isSoldOut ? '🚫 Habis' : '✅ Tersedia'}
-                                        </button>
+                                        {item.isSoldOut ? '🚫 Habis' : '✅ Tersedia'}
+                                    </button>
 
-                                        <button
-                                            onClick={() => {
-                                                setIsAdding(true);
-                                                setEditingItem(item);
-                                                setNewItem({
-                                                    name: item.name,
-                                                    price: item.price,
-                                                    category: item.category,
-                                                    description: item.description || '',
-                                                    image: item.image || ''
-                                                });
-                                            }}
-                                            className="px-3 py-2 text-xs font-semibold text-blue-600
-            hover:bg-blue-50 rounded-lg border-2 border-blue-200"
-                                        >
-                                            ✏️ Edit
-                                        </button>
+                                    <button
+                                        onClick={() => {
+                                            setIsAdding(true);
+                                            setEditingItem(item);
+                                            setNewItem({
+                                                name: item.name,
+                                                price: item.price,
+                                                category: item.category,
+                                                description: item.description || '',
+                                                image: item.image || ''
+                                            });
+                                        }}
+                                        className="h-9 px-3 text-xs font-semibold text-blue-600 flex items-center justify-center
+                                            hover:bg-blue-50 rounded-lg border-2 border-blue-200"
+                                    >
+                                        ✏️ Edit
+                                    </button>
 
-                                        <button
-                                            onClick={() => handleDelete(item)}
-                                            className="px-3 py-2 text-xs text-gray-500 font-semibold hover:bg-gray-100
-            rounded-lg transition-all border-2 border-transparent
-            hover:border-gray-200"
-                                        >
-                                            🗑️
-                                        </button>
-                                    </div>
+                                    <button
+                                        onClick={() => handleDelete(item)}
+                                        className="h-9 px-3 text-xs text-gray-500 font-semibold hover:bg-red-50 flex items-center justify-center
+                                            hover:text-red-500 rounded-lg transition-all border-2 border-transparent hover:border-red-200"
+                                        title="Hapus"
+                                    >
+                                        🗑️
+                                    </button>
                                 </div>
                             </div>
                         ))}
