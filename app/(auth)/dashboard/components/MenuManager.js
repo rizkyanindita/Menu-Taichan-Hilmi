@@ -31,8 +31,9 @@ export default function MenuManager() {
         image: ''
     });
 
-    // Hardcoded for demo purposes
-    const CAFE_ID = "demo-cafe";
+    // Uses environment variable for multi-tenancy
+    const CAFE_ID = process.env.NEXT_PUBLIC_CAFE_ID || "demo-cafe";
+    const CAFE_NAME = process.env.NEXT_PUBLIC_CAFE_NAME || "Taichan Goreng Bang Boy";
 
     useEffect(() => {
         const unsub = onSnapshot(
@@ -91,7 +92,7 @@ export default function MenuManager() {
             await setDoc(
                 docRef,
                 {
-                    name: "Taichan Goreng Bang Boy",
+                    name: CAFE_NAME,
                     items: updatedItems
                 },
                 { merge: true }
