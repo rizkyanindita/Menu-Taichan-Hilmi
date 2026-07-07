@@ -1,533 +1,696 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import Button from "@/components/Button";
 import Image from "next/image";
 import { db } from "@/lib/firebase";
-import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove, setDoc, getDoc } from "firebase/firestore";
+import {
+  doc,
+  onSnapshot,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+  setDoc,
+  getDoc,
+} from "firebase/firestore";
 
 export default function MenuManager() {
-    const [items, setItems] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [isAdding, setIsAdding] = useState(false);
-    const [editingItem, setEditingItem] = useState(null);
-    const [selectedItem, setSelectedItem] = useState(null);
-    const [imageErrors, setImageErrors] = useState({});
-    const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
-    const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [imageErrors, setImageErrors] = useState({});
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const [isCloning, setIsCloning] = useState(false);
+  const [cloneData, setCloneData] = useState({ newId: "", newName: "" });
 
-    const availableCategories = Array.from(new Set(items.map(item => item.category).filter(Boolean)));
+  const availableCategories = Array.from(
+    new Set(items.map((item) => item.category).filter(Boolean)),
+  );
 
-    const handleImageError = (id) => {
-        setImageErrors(prev => ({ ...prev, [id]: true }));
-    };
+  const handleImageError = (id) => {
+    setImageErrors((prev) => ({ ...prev, [id]: true }));
+  };
 
+  // Form State
+  const [newItem, setNewItem] = useState({
+    name: "",
+    price: "",
+    category: "",
+    description: "",
+    image: "",
+  });
 
-    // Form State
-    const [newItem, setNewItem] = useState({
-        name: '',
-        price: '',
-        category: '',
-        description: '',
-        image: ''
-    });
+  // Uses environment variable for multi-tenancy
+  const CAFE_ID = process.env.NEXT_PUBLIC_CAFE_ID || "demo-cafe";
+  const CAFE_NAME =
+    process.env.NEXT_PUBLIC_CAFE_NAME || "Taichan Goreng Bang BoyS";
 
-    // Uses environment variable for multi-tenancy
-    const CAFE_ID = process.env.NEXT_PUBLIC_CAFE_ID || "demo-cafe";
-    const CAFE_NAME = process.env.NEXT_PUBLIC_CAFE_NAME || "Taichan Goreng Bang Boy";
+  useEffect(() => {
+    const unsub = onSnapshot(
+      doc(db, "menus", CAFE_ID),
+      (doc) => {
+        if (doc.exists()) {
+          setItems(doc.data().items || []);
+        } else {
+          setItems([]);
+        }
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching menu:", error);
+        setLoading(false);
+        alert("Error connecting to Firebase. Check console.");
+      },
+    );
 
-    useEffect(() => {
-        const unsub = onSnapshot(
-            doc(db, "menus", CAFE_ID),
-            (doc) => {
-                if (doc.exists()) {
-                    setItems(doc.data().items || []);
-                } else {
-                    setItems([]);
-                }
-                setLoading(false);
-            },
-            (error) => {
-                console.error("Error fetching menu:", error);
-                setLoading(false);
-                alert("Error connecting to Firebase. Check console.");
-            }
+    return () => unsub();
+  }, []);
+
+  const handleSubmitItem = async (e) => {
+    e.preventDefault();
+
+    try {
+      const docRef = doc(db, "menus", CAFE_ID);
+      const docSnap = await getDoc(docRef);
+      const currentItems = docSnap.exists() ? docSnap.data().items || [] : [];
+
+      let updatedItems;
+
+      if (editingItem) {
+        // 🔁 EDIT MODE
+        updatedItems = currentItems.map((item) =>
+          item.id === editingItem.id
+            ? {
+                ...item,
+                ...newItem,
+                price: parseFloat(newItem.price),
+              }
+            : item,
         );
+      } else {
+        // ➕ ADD MODE
+        const itemToAdd = {
+          id: Date.now(),
+          ...newItem,
+          price: parseFloat(newItem.price),
+          isSoldOut: false,
+        };
 
-        return () => unsub();
-    }, []);
+        updatedItems = [...currentItems, itemToAdd];
+      }
 
-    const handleSubmitItem = async (e) => {
-        e.preventDefault();
+      await setDoc(
+        docRef,
+        {
+          name: CAFE_NAME,
+          items: updatedItems,
+        },
+        { merge: true },
+      );
 
-        try {
-            const docRef = doc(db, "menus", CAFE_ID);
-            const docSnap = await getDoc(docRef);
-            const currentItems = docSnap.exists() ? docSnap.data().items || [] : [];
+      // Reset state
+      setIsAdding(false);
+      setShowNewCategoryInput(false);
+      setIsCategoryDropdownOpen(false);
+      setEditingItem(null);
+      setNewItem({
+        name: "",
+        price: "",
+        category: "",
+        description: "",
+        image: "",
+      });
+    } catch (error) {
+      console.error(error);
+      alert("Gagal menyimpan menu");
+    }
+  };
 
-            let updatedItems;
+  const handleToggleStock = async (item) => {
+    try {
+      const docRef = doc(db, "menus", CAFE_ID);
+      const docSnap = await getDoc(docRef);
 
-            if (editingItem) {
-                // 🔁 EDIT MODE
-                updatedItems = currentItems.map(item =>
-                    item.id === editingItem.id
-                        ? {
-                            ...item,
-                            ...newItem,
-                            price: parseFloat(newItem.price)
-                        }
-                        : item
-                );
-            } else {
-                // ➕ ADD MODE
-                const itemToAdd = {
-                    id: Date.now(),
-                    ...newItem,
-                    price: parseFloat(newItem.price),
-                    isSoldOut: false
-                };
+      if (docSnap.exists()) {
+        const currentItems = docSnap.data().items || [];
+        // Update just the specific item
+        const updatedItems = currentItems.map((i) => {
+          if (i.id === item.id) {
+            return { ...i, isSoldOut: !i.isSoldOut };
+          }
+          return i;
+        });
 
-                updatedItems = [...currentItems, itemToAdd];
-            }
+        await updateDoc(docRef, {
+          items: updatedItems,
+        });
+      }
+    } catch (error) {
+      console.error("Error updating stock:", error);
+      alert("Gagal update status stok");
+    }
+  };
 
-            await setDoc(
-                docRef,
-                {
-                    name: CAFE_NAME,
-                    items: updatedItems
-                },
-                { merge: true }
-            );
+  const handleDelete = async (item) => {
+    if (!confirm(`Yakin ingin menghapus ${item.name}?`)) return;
 
-            // Reset state
-            setIsAdding(false);
-            setShowNewCategoryInput(false);
-            setIsCategoryDropdownOpen(false);
-            setEditingItem(null);
-            setNewItem({
-                name: '',
-                price: '',
-                category: '',
-                description: '',
-                image: ''
-            });
+    try {
+      await updateDoc(doc(db, "menus", CAFE_ID), {
+        items: arrayRemove(item),
+      });
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      alert("Gagal menghapus item");
+    }
+  };
 
-        } catch (error) {
-            console.error(error);
-            alert("Gagal menyimpan menu");
-        }
-    };
-
-
-    const handleToggleStock = async (item) => {
-        try {
-            const docRef = doc(db, "menus", CAFE_ID);
-            const docSnap = await getDoc(docRef);
-
-            if (docSnap.exists()) {
-                const currentItems = docSnap.data().items || [];
-                // Update just the specific item 
-                const updatedItems = currentItems.map(i => {
-                    if (i.id === item.id) {
-                        return { ...i, isSoldOut: !i.isSoldOut };
-                    }
-                    return i;
-                });
-
-                await updateDoc(docRef, {
-                    items: updatedItems
-                });
-            }
-        } catch (error) {
-            console.error("Error updating stock:", error);
-            alert("Gagal update status stok");
-        }
-    };
-
-    const handleDelete = async (item) => {
-        if (!confirm(`Yakin ingin menghapus ${item.name}?`)) return;
-
-        try {
-            await updateDoc(doc(db, "menus", CAFE_ID), {
-                items: arrayRemove(item)
-            });
-        } catch (error) {
-            console.error("Error deleting item:", error);
-            alert("Gagal menghapus item");
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-200">
-                <div className="flex items-center justify-center gap-3">
-                    <div className="w-6 h-6 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-gray-600 font-medium">Loading menu...</span>
-                </div>
-            </div>
-        );
+  const handleCloneMenu = async (e) => {
+    e.preventDefault();
+    if (!cloneData.newId || !cloneData.newName) {
+      alert("ID dan Nama Cafe baru wajib diisi");
+      return;
     }
 
-    return (
-        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-lg border-2 border-gray-100">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b-2 border-gray-100">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Menu Management</h2>
-                    <p className="text-sm text-gray-500 mt-1">Kelola menu cafe Anda</p>
-                </div>
-                <Button
-                    onClick={() => {
-                        setIsAdding(!isAdding);
-                        if (!isAdding) {
-                            setShowNewCategoryInput(false);
-                            setIsCategoryDropdownOpen(false);
-                        }
-                    }}
-                    className="w-full sm:w-auto text-sm py-2.5 px-5 shadow-lg hover:shadow-xl justify-center"
-                >
-                    {isAdding ? '✕ Batal' : '+ Tambah Item'}
-                </Button>
-            </div>
+    const newId = cloneData.newId.toLowerCase().replace(/\s+/g, "-");
 
-            {/* Add Item Form */}
-            {isAdding && (
-                <form onSubmit={handleSubmitItem} className="mb-8 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-100 shadow-inner">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <span>{editingItem ? '✏️' : '📝'}</span>
-                        {editingItem ? 'Edit Menu' : 'Tambah Menu Baru'}
-                    </h3>
-                    <div className="grid gap-5">
-                        {/* Name Field */}
-                        <div className="space-y-2">
-                            <label className="block text-sm font-semibold text-gray-800">
-                                Nama Item <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                required
-                                type="text"
-                                placeholder="Contoh: Cappuccino, Nasi Goreng"
-                                className="w-full px-4 py-3 text-gray-900 bg-white border-2 border-gray-200 rounded-xl 
+    try {
+      setLoading(true);
+      const newDocRef = doc(db, "menus", newId);
+      const newDocSnap = await getDoc(newDocRef);
+
+      if (newDocSnap.exists()) {
+        if (!confirm(`Cafe ID "${newId}" sudah ada. Timpa datanya?`)) {
+          setLoading(false);
+          return;
+        }
+      }
+
+      await setDoc(newDocRef, {
+        name: cloneData.newName,
+        items: items,
+      });
+
+      alert(`Berhasil menduplikasi menu ke ID: ${newId}`);
+      setIsCloning(false);
+      setCloneData({ newId: "", newName: "" });
+    } catch (error) {
+      console.error("Error cloning menu:", error);
+      alert("Gagal menduplikasi menu");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-200">
+        <div className="flex items-center justify-center gap-3">
+          <div className="w-6 h-6 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-gray-600 font-medium">Loading menu...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-lg border-2 border-gray-100">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b-2 border-gray-100">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Menu Management</h2>
+          <p className="text-sm text-gray-500 mt-1">Kelola menu cafe Anda</p>
+        </div>
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          <Button
+            onClick={() => {
+              setIsAdding(!isAdding);
+              if (!isAdding) {
+                setShowNewCategoryInput(false);
+                setIsCategoryDropdownOpen(false);
+                setIsCloning(false);
+              }
+            }}
+            className="flex-1 sm:flex-none text-sm py-2.5 px-5 shadow-lg hover:shadow-xl justify-center"
+          >
+            {isAdding ? "✕ Batal" : "+ Tambah Item"}
+          </Button>
+          <Button
+            onClick={() => {
+              setIsCloning(!isCloning);
+              if (!isCloning) {
+                setIsAdding(false);
+                setCloneData({ newId: "", newName: "" });
+              }
+            }}
+            className="flex-1 sm:flex-none text-sm py-2.5 px-5 bg-gray-100 !text-gray-700 border-2 border-gray-200 hover:bg-gray-200 shadow-none hover:shadow-md justify-center"
+          >
+            {isCloning ? "✕ Batal" : "👯 Duplikasi Cafe"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Clone Cafe Form */}
+      {isCloning && (
+        <form
+          onSubmit={handleCloneMenu}
+          className="mb-8 p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border-2 border-purple-100 shadow-inner"
+        >
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <span>👯</span> Duplikasi Seluruh Menu ke Cafe Baru
+          </h3>
+          <p className="text-xs text-purple-600 mb-4 font-medium">
+            Fitur ini akan menyalin seluruh {items.length} item menu dari "
+            {CAFE_NAME}" ke database baru.
+          </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-800">
+                Cafe ID Baru (untuk URL)
+              </label>
+              <input
+                required
+                type="text"
+                placeholder="misal: cafe-sultan-bintaro"
+                className="w-full px-4 py-3 text-gray-900 bg-white border-2 border-gray-200 rounded-xl focus:border-purple-400 outline-none"
+                value={cloneData.newId}
+                onChange={(e) =>
+                  setCloneData({ ...cloneData, newId: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-800">
+                Nama Cafe Baru
+              </label>
+              <input
+                required
+                type="text"
+                placeholder="misal: Kopi Sultan Bintaro"
+                className="w-full px-4 py-3 text-gray-900 bg-white border-2 border-gray-200 rounded-xl focus:border-purple-400 outline-none"
+                value={cloneData.newName}
+                onChange={(e) =>
+                  setCloneData({ ...cloneData, newName: e.target.value })
+                }
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex gap-3">
+            <Button
+              type="submit"
+              className="flex-1 py-3 bg-purple-600 hover:bg-purple-700"
+            >
+              🚀 Proses Duplikasi
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {/* Add Item Form */}
+      {isAdding && (
+        <form
+          onSubmit={handleSubmitItem}
+          className="mb-8 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-100 shadow-inner"
+        >
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <span>{editingItem ? "✏️" : "📝"}</span>
+            {editingItem ? "Edit Menu" : "Tambah Menu Baru"}
+          </h3>
+          <div className="grid gap-5">
+            {/* Name Field */}
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-800">
+                Nama Item <span className="text-red-500">*</span>
+              </label>
+              <input
+                required
+                type="text"
+                placeholder="Contoh: Cappuccino, Nasi Goreng"
+                className="w-full px-4 py-3 text-gray-900 bg-white border-2 border-gray-200 rounded-xl 
                                          focus:ring-4 focus:ring-primary/10 focus:border-primary 
                                          outline-none transition-all duration-200 
                                          placeholder:text-gray-400 font-medium"
-                                value={newItem.name}
-                                onChange={e => setNewItem({ ...newItem, name: e.target.value })}
-                            />
-                        </div>
+                value={newItem.name}
+                onChange={(e) =>
+                  setNewItem({ ...newItem, name: e.target.value })
+                }
+              />
+            </div>
 
-                        {/* Price and Category */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="block text-sm font-semibold text-gray-800">
-                                    Harga <span className="text-red-500">*</span>
-                                </label>
-                                <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">
-                                        Rp
-                                    </span>
-                                    <input
-                                        required
-                                        type="number"
-                                        placeholder="25000"
-                                        className="w-full pl-12 pr-4 py-3 text-gray-900 bg-white border-2 border-gray-200 rounded-xl 
+            {/* Price and Category */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-800">
+                  Harga <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">
+                    Rp
+                  </span>
+                  <input
+                    required
+                    type="number"
+                    placeholder="25000"
+                    className="w-full pl-12 pr-4 py-3 text-gray-900 bg-white border-2 border-gray-200 rounded-xl 
                                                  focus:ring-4 focus:ring-primary/10 focus:border-primary 
                                                  outline-none transition-all duration-200 
                                                  placeholder:text-gray-400 font-medium"
-                                        value={newItem.price}
-                                        onChange={e => setNewItem({ ...newItem, price: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="block text-sm font-semibold text-gray-800">
-                                    Kategori <span className="text-red-500">*</span>
-                                </label>
-                                {showNewCategoryInput ? (
-                                    <div className="flex gap-2">
-                                        <input
-                                            required={showNewCategoryInput}
-                                            type="text"
-                                            placeholder="Nama kategori baru"
-                                            className="flex-1 px-4 py-3 w-full text-gray-900 bg-white border-2 border-gray-200 rounded-xl 
+                    value={newItem.price}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, price: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-800">
+                  Kategori <span className="text-red-500">*</span>
+                </label>
+                {showNewCategoryInput ? (
+                  <div className="flex gap-2">
+                    <input
+                      required={showNewCategoryInput}
+                      type="text"
+                      placeholder="Nama kategori baru"
+                      className="flex-1 px-4 py-3 w-full text-gray-900 bg-white border-2 border-gray-200 rounded-xl 
                                                      focus:ring-4 focus:ring-primary/10 focus:border-primary 
                                                      outline-none transition-all duration-200 
                                                      placeholder:text-gray-400 font-medium"
-                                            value={newItem.category}
-                                            onChange={e => setNewItem({ ...newItem, category: e.target.value })}
-                                            autoFocus
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setShowNewCategoryInput(false);
-                                                setNewItem({ ...newItem, category: availableCategories[0] || '' });
-                                            }}
-                                            className="px-4 py-3 bg-gray-100 text-gray-600 font-semibold rounded-xl border-2 border-gray-200 hover:bg-gray-200 transition-all font-bold"
-                                        >
-                                            ✕
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="relative">
-                                        <input 
-                                            type="text" 
-                                            required={!showNewCategoryInput} 
-                                            value={newItem.category} 
-                                            className="sr-only" 
-                                            onChange={() => {}} 
-                                            tabIndex={-1} 
-                                        />
-                                        
-                                        <div 
-                                            onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-                                            className={`w-full px-4 py-3 bg-white border-2 rounded-xl 
+                      value={newItem.category}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, category: e.target.value })
+                      }
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowNewCategoryInput(false);
+                        setNewItem({
+                          ...newItem,
+                          category: availableCategories[0] || "",
+                        });
+                      }}
+                      className="px-4 py-3 bg-gray-100 text-gray-600 font-semibold rounded-xl border-2 border-gray-200 hover:bg-gray-200 transition-all font-bold"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required={!showNewCategoryInput}
+                      value={newItem.category}
+                      className="sr-only"
+                      onChange={() => {}}
+                      tabIndex={-1}
+                    />
+
+                    <div
+                      onClick={() =>
+                        setIsCategoryDropdownOpen(!isCategoryDropdownOpen)
+                      }
+                      className={`w-full px-4 py-3 bg-white border-2 rounded-xl 
                                                      focus-within:ring-4 focus-within:ring-primary/10 focus-within:border-primary 
                                                      outline-none transition-all duration-200 font-medium flex justify-between items-center cursor-pointer
                                                      ${isCategoryDropdownOpen ? "border-primary ring-4 ring-primary/10" : "border-gray-200"}`}
-                                        >
-                                            <span className={`block w-full truncate pr-4 ${newItem.category ? "text-gray-900" : "text-gray-400"}`}>
-                                                {newItem.category || "Pilih Kategori"}
-                                            </span>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#131313" viewBox="0 0 292.4 292.4" className={`flex-shrink-0 transition-transform duration-200 ${isCategoryDropdownOpen ? "rotate-180" : ""}`}>
-                                                <path d="M287 69.4a17.6 17.6 0 0 0-13-5.4H18.4c-5 0-9.3 1.8-12.9 5.4A17.6 17.6 0 0 0 0 82.2c0 5 1.8 9.3 5.4 12.9l128 127.9c3.6 3.6 7.8 5.4 12.8 5.4s9.2-1.8 12.8-5.4L287 95c3.5-3.5 5.4-7.8 5.4-12.8 0-5-1.9-9.2-5.5-12.8z"/>
-                                            </svg>
-                                        </div>
+                    >
+                      <span
+                        className={`block w-full truncate pr-4 ${newItem.category ? "text-gray-900" : "text-gray-400"}`}
+                      >
+                        {newItem.category || "Pilih Kategori"}
+                      </span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="12"
+                        height="12"
+                        fill="#131313"
+                        viewBox="0 0 292.4 292.4"
+                        className={`flex-shrink-0 transition-transform duration-200 ${isCategoryDropdownOpen ? "rotate-180" : ""}`}
+                      >
+                        <path d="M287 69.4a17.6 17.6 0 0 0-13-5.4H18.4c-5 0-9.3 1.8-12.9 5.4A17.6 17.6 0 0 0 0 82.2c0 5 1.8 9.3 5.4 12.9l128 127.9c3.6 3.6 7.8 5.4 12.8 5.4s9.2-1.8 12.8-5.4L287 95c3.5-3.5 5.4-7.8 5.4-12.8 0-5-1.9-9.2-5.5-12.8z" />
+                      </svg>
+                    </div>
 
-                                        {isCategoryDropdownOpen && (
-                                            <>
-                                                <div className="fixed inset-0 z-10" onClick={() => setIsCategoryDropdownOpen(false)} />
-                                                <div className="absolute z-20 w-full mt-2 bg-white border-2 border-gray-100 rounded-xl shadow-xl max-h-60 overflow-y-auto">
-                                                    {availableCategories.map(cat => (
-                                                        <div 
-                                                            key={cat}
-                                                            onClick={() => {
-                                                                setNewItem({ ...newItem, category: cat });
-                                                                setIsCategoryDropdownOpen(false);
-                                                            }}
-                                                            className="px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-700 font-medium transition-colors border-b border-gray-50 last:border-0 truncate"
-                                                            title={cat}
-                                                        >
-                                                            {cat}
-                                                        </div>
-                                                    ))}
-                                                    <div 
-                                                        onClick={() => {
-                                                            setShowNewCategoryInput(true);
-                                                            setNewItem({ ...newItem, category: '' });
-                                                            setIsCategoryDropdownOpen(false);
-                                                        }}
-                                                        className="px-4 py-3 bg-blue-50 hover:bg-blue-100 cursor-pointer text-blue-600 font-bold transition-colors sticky bottom-0 border-t border-blue-100"
-                                                    >
-                                                        + Tambah Kategori Baru...
-                                                    </div>
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-                                )}
+                    {isCategoryDropdownOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setIsCategoryDropdownOpen(false)}
+                        />
+                        <div className="absolute z-20 w-full mt-2 bg-white border-2 border-gray-100 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                          {availableCategories.map((cat) => (
+                            <div
+                              key={cat}
+                              onClick={() => {
+                                setNewItem({ ...newItem, category: cat });
+                                setIsCategoryDropdownOpen(false);
+                              }}
+                              className="px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-700 font-medium transition-colors border-b border-gray-50 last:border-0 truncate"
+                              title={cat}
+                            >
+                              {cat}
                             </div>
+                          ))}
+                          <div
+                            onClick={() => {
+                              setShowNewCategoryInput(true);
+                              setNewItem({ ...newItem, category: "" });
+                              setIsCategoryDropdownOpen(false);
+                            }}
+                            className="px-4 py-3 bg-blue-50 hover:bg-blue-100 cursor-pointer text-blue-600 font-bold transition-colors sticky bottom-0 border-t border-blue-100"
+                          >
+                            + Tambah Kategori Baru...
+                          </div>
                         </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
 
-                        {/* Description */}
-                        <div className="space-y-2">
-                            <label className="block text-sm font-semibold text-gray-800">
-                                Deskripsi
-                            </label>
-                            <textarea
-                                rows="3"
-                                placeholder="Deskripsikan menu Anda..."
-                                className="w-full px-4 py-3 text-gray-900 bg-white border-2 border-gray-200 rounded-xl 
+            {/* Description */}
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-800">
+                Deskripsi
+              </label>
+              <textarea
+                rows="3"
+                placeholder="Deskripsikan menu Anda..."
+                className="w-full px-4 py-3 text-gray-900 bg-white border-2 border-gray-200 rounded-xl 
                                          focus:ring-4 focus:ring-primary/10 focus:border-primary 
                                          outline-none transition-all duration-200 
                                          placeholder:text-gray-400 font-medium resize-none"
-                                value={newItem.description}
-                                onChange={e => setNewItem({ ...newItem, description: e.target.value })}
-                            />
-                        </div>
+                value={newItem.description}
+                onChange={(e) =>
+                  setNewItem({ ...newItem, description: e.target.value })
+                }
+              />
+            </div>
 
-                        {/* Image URL */}
-                        <div className="space-y-2">
-                            <label className="block text-sm font-semibold text-gray-800">
-                                URL Gambar
-                            </label>
-                            <input
-                                type="text"
-                                placeholder="https://example.com/image.jpg"
-                                className="w-full px-4 py-3 text-gray-900 bg-white border-2 border-gray-200 rounded-xl 
+            {/* Image URL */}
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-800">
+                URL Gambar
+              </label>
+              <input
+                type="text"
+                placeholder="https://example.com/image.jpg"
+                className="w-full px-4 py-3 text-gray-900 bg-white border-2 border-gray-200 rounded-xl 
                                          focus:ring-4 focus:ring-primary/10 focus:border-primary 
                                          outline-none transition-all duration-200 
                                          placeholder:text-gray-400 font-medium"
-                                value={newItem.image}
-                                onChange={e => setNewItem({ ...newItem, image: e.target.value })}
-                            />
-                        </div>
+                value={newItem.image}
+                onChange={(e) =>
+                  setNewItem({ ...newItem, image: e.target.value })
+                }
+              />
+            </div>
 
-                        {/* Submit Button */}
-                        <Button type="submit" className="w-full py-3.5 text-base font-semibold shadow-lg hover:shadow-xl">
-                            {editingItem ? '💾 Simpan Perubahan' : '💾 Simpan Menu'}
-                        </Button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setIsAdding(false);
-                                setShowNewCategoryInput(false);
-                                setIsCategoryDropdownOpen(false);
-                                setEditingItem(null);
-                                setNewItem({
-                                    name: '',
-                                    price: '',
-                                    category: '',
-                                    description: '',
-                                    image: ''
-                                });
-                            }}
-                            className="flex-1 py-3.5 text-base font-semibold rounded-xl
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              className="w-full py-3.5 text-base font-semibold shadow-lg hover:shadow-xl"
+            >
+              {editingItem ? "💾 Simpan Perubahan" : "💾 Simpan Menu"}
+            </Button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsAdding(false);
+                setShowNewCategoryInput(false);
+                setIsCategoryDropdownOpen(false);
+                setEditingItem(null);
+                setNewItem({
+                  name: "",
+                  price: "",
+                  category: "",
+                  description: "",
+                  image: "",
+                });
+              }}
+              className="flex-1 py-3.5 text-base font-semibold rounded-xl
                border-2 border-gray-300 text-gray-600
                hover:bg-gray-100 transition-all"
-                        >
-                            ✕ Batal
-                        </button>
-                    </div>
-                </form>
-            )}
+            >
+              ✕ Batal
+            </button>
+          </div>
+        </form>
+      )}
 
-            {/* Items List */}
-            <div className="space-y-3">
-                {items.length === 0 ? (
-                    <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                        <div className="text-5xl mb-3">🍽️</div>
-                        <p className="text-gray-500 font-medium">Belum ada menu. Tambahkan sekarang!</p>
-                    </div>
-                ) : (
-                    <>
-                        <p className="text-sm text-gray-600 font-medium mb-3">
-                            Total: {items.length} item
-                        </p>
-                        {items.map(item => (
-                            <div
-                                key={item.id}
-                                onClick={() => setSelectedItem(item)}
-                                className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-white
+      {/* Items List */}
+      <div className="space-y-3">
+        {items.length === 0 ? (
+          <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+            <div className="text-5xl mb-3">🍽️</div>
+            <p className="text-gray-500 font-medium">
+              Belum ada menu. Tambahkan sekarang!
+            </p>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm text-gray-600 font-medium mb-3">
+              Total: {items.length} item
+            </p>
+            {items.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => setSelectedItem(item)}
+                className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-white
       hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50
       rounded-xl transition-all duration-200 border-2 border-gray-100
       hover:border-blue-200 hover:shadow-md group cursor-pointer"
-                            >
-                                {/* MAIN CONTENT (IMAGE & INFO) */}
-                                <div className="flex items-center gap-4 w-full sm:w-auto flex-1 min-w-0">
-                                    {/* IMAGE */}
-                                    <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden relative
+              >
+                {/* MAIN CONTENT (IMAGE & INFO) */}
+                <div className="flex items-center gap-4 w-full sm:w-auto flex-1 min-w-0">
+                  {/* IMAGE */}
+                  <div
+                    className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden relative
                                         flex-shrink-0 ring-2 ring-gray-200 group-hover:ring-primary/30
-                                        flex items-center justify-center">
-                                        {(item.image && !imageErrors[item.id] && (item.image.startsWith('/') || item.image.startsWith('http'))) ? (
-                                            <Image
-                                                src={item.image}
-                                                alt={item.name}
-                                                fill
-                                                className="object-cover"
-                                                sizes="64px"
-                                                onError={() => handleImageError(item.id)}
-                                            />
-                                        ) : (
-                                            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10 outline-none">
-                                                <span className="text-[10px] text-gray-400 text-center px-1 font-medium leading-tight">
-                                                    Belum ada gambar
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
+                                        flex items-center justify-center"
+                  >
+                    {item.image &&
+                    !imageErrors[item.id] &&
+                    (item.image.startsWith("/") ||
+                      item.image.startsWith("http")) ? (
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        className="object-cover"
+                        sizes="64px"
+                        onError={() => handleImageError(item.id)}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10 outline-none">
+                        <span className="text-[10px] text-gray-400 text-center px-1 font-medium leading-tight">
+                          Belum ada gambar
+                        </span>
+                      </div>
+                    )}
+                  </div>
 
-                                    {/* INFO */}
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-bold text-gray-900 truncate" title={item.name}>
-                                            {item.name}
-                                        </p>
+                  {/* INFO */}
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className="font-bold text-gray-900 truncate"
+                      title={item.name}
+                    >
+                      {item.name}
+                    </p>
 
-                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                            {/* PRICE */}
-                                            <span
-                                                className="text-sm font-semibold text-primary"
-                                                title={`Rp ${item.price.toLocaleString('id-ID')}`}
-                                            >
-                                                Rp {item.price.toLocaleString('id-ID')}
-                                            </span>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {/* PRICE */}
+                      <span
+                        className="text-sm font-semibold text-primary"
+                        title={`Rp ${item.price.toLocaleString("id-ID")}`}
+                      >
+                        Rp {item.price.toLocaleString("id-ID")}
+                      </span>
 
-                                            {/* CATEGORY */}
-                                            {item.category && (
-                                                <span
-                                                    className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full
+                      {/* CATEGORY */}
+                      {item.category && (
+                        <span
+                          className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full
                                                     truncate max-w-[120px]"
-                                                    title={item.category}
-                                                >
-                                                    {item.category}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
+                          title={item.category}
+                        >
+                          {item.category}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-                                {/* ACTIONS */}
-                                <div
-                                    className="flex items-center gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-dashed border-gray-100 mt-1 sm:mt-0 w-full sm:w-auto"
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    <button
-                                        onClick={() => handleToggleStock(item)}
-                                        className={`
+                {/* ACTIONS */}
+                <div
+                  className="flex items-center gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-dashed border-gray-100 mt-1 sm:mt-0 w-full sm:w-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={() => handleToggleStock(item)}
+                    className={`
                                             flex-1 sm:flex-none sm:w-[96px] h-9
                                             flex items-center justify-center gap-1
                                             text-xs font-bold rounded-lg
                                             transition-all border-2
-                                            ${item.isSoldOut
-                                                ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
-                                                : 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
+                                            ${
+                                              item.isSoldOut
+                                                ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+                                                : "bg-green-50 text-green-600 border-green-200 hover:bg-green-100"
                                             }
                                         `}
-                                    >
-                                        {item.isSoldOut ? '🚫 Habis' : '✅ Tersedia'}
-                                    </button>
+                  >
+                    {item.isSoldOut ? "🚫 Habis" : "✅ Tersedia"}
+                  </button>
 
-                                    <button
-                                        onClick={() => {
-                                            setIsAdding(true);
-                                            setShowNewCategoryInput(!availableCategories.includes(item.category) && item.category !== '');
-                                            setEditingItem(item);
-                                            setNewItem({
-                                                name: item.name,
-                                                price: item.price,
-                                                category: item.category,
-                                                description: item.description || '',
-                                                image: item.image || ''
-                                            });
-                                        }}
-                                        className="h-9 px-3 text-xs font-semibold text-blue-600 flex items-center justify-center
+                  <button
+                    onClick={() => {
+                      setIsAdding(true);
+                      setShowNewCategoryInput(
+                        !availableCategories.includes(item.category) &&
+                          item.category !== "",
+                      );
+                      setEditingItem(item);
+                      setNewItem({
+                        name: item.name,
+                        price: item.price,
+                        category: item.category,
+                        description: item.description || "",
+                        image: item.image || "",
+                      });
+                    }}
+                    className="h-9 px-3 text-xs font-semibold text-blue-600 flex items-center justify-center
                                             hover:bg-blue-50 rounded-lg border-2 border-blue-200"
-                                    >
-                                        ✏️ Edit
-                                    </button>
+                  >
+                    ✏️ Edit
+                  </button>
 
-                                    <button
-                                        onClick={() => handleDelete(item)}
-                                        className="h-9 px-3 text-xs text-gray-500 font-semibold hover:bg-red-50 flex items-center justify-center
+                  <button
+                    onClick={() => handleDelete(item)}
+                    className="h-9 px-3 text-xs text-gray-500 font-semibold hover:bg-red-50 flex items-center justify-center
                                             hover:text-red-500 rounded-lg transition-all border-2 border-transparent hover:border-red-200"
-                                        title="Hapus"
-                                    >
-                                        🗑️
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-
-                    </>
-                )}
-            </div>
-            {selectedItem && (
-                <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4">
-                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl relative">
-
-                        <button
-                            onClick={() => setSelectedItem(null)}
-                            aria-label="Close"
-                            className="
+                    title="Hapus"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+      {selectedItem && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl relative">
+            <button
+              onClick={() => setSelectedItem(null)}
+              aria-label="Close"
+              className="
     absolute top-4 right-4 z-10
     w-9 h-9
     flex items-center justify-center
@@ -540,56 +703,55 @@ export default function MenuManager() {
     active:scale-95
     transition
   "
-                        >
-                            ✕
-                        </button>
+            >
+              ✕
+            </button>
 
-
-                        <div className="w-full h-40 bg-gray-100 rounded-xl overflow-hidden mb-4 relative">
-                            {(selectedItem.image && !imageErrors[selectedItem.id] && (selectedItem.image.startsWith('/') || selectedItem.image.startsWith('http'))) ? (
-                                <Image
-                                    src={selectedItem.image}
-                                    alt={selectedItem.name}
-                                    fill
-                                    className="object-cover"
-                                    onError={() => handleImageError(selectedItem.id)}
-                                />
-                            ) : (
-                                <div className="flex items-center justify-center h-full w-full bg-gray-100 text-gray-400 font-medium">
-                                    Belum ada gambar
-                                </div>
-                            )}
-                        </div>
-
-                        <h3 className="text-xl font-bold text-gray-900">
-                            {selectedItem.name}
-                        </h3>
-
-                        <p className="text-primary font-semibold mt-1">
-                            Rp {selectedItem.price.toLocaleString('id-ID')}
-                        </p>
-
-                        {selectedItem.category && (
-                            <span className="inline-block mt-2 text-xs bg-gray-100 px-3 py-1 rounded-full text-gray-600">
-                                {selectedItem.category}
-                            </span>
-                        )}
-
-                        {selectedItem.description && (
-                            <p className="mt-4 text-sm text-gray-600 leading-relaxed">
-                                {selectedItem.description}
-                            </p>
-                        )}
-
-                        <div className="mt-6 flex justify-end">
-                            <Button onClick={() => setSelectedItem(null)}>
-                                Tutup
-                            </Button>
-                        </div>
-                    </div>
+            <div className="w-full h-40 bg-gray-100 rounded-xl overflow-hidden mb-4 relative">
+              {selectedItem.image &&
+              !imageErrors[selectedItem.id] &&
+              (selectedItem.image.startsWith("/") ||
+                selectedItem.image.startsWith("http")) ? (
+                <Image
+                  src={selectedItem.image}
+                  alt={selectedItem.name}
+                  fill
+                  className="object-cover"
+                  onError={() => handleImageError(selectedItem.id)}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full w-full bg-gray-100 text-gray-400 font-medium">
+                  Belum ada gambar
                 </div>
+              )}
+            </div>
+
+            <h3 className="text-xl font-bold text-gray-900">
+              {selectedItem.name}
+            </h3>
+
+            <p className="text-primary font-semibold mt-1">
+              Rp {selectedItem.price.toLocaleString("id-ID")}
+            </p>
+
+            {selectedItem.category && (
+              <span className="inline-block mt-2 text-xs bg-gray-100 px-3 py-1 rounded-full text-gray-600">
+                {selectedItem.category}
+              </span>
             )}
 
+            {selectedItem.description && (
+              <p className="mt-4 text-sm text-gray-600 leading-relaxed">
+                {selectedItem.description}
+              </p>
+            )}
+
+            <div className="mt-6 flex justify-end">
+              <Button onClick={() => setSelectedItem(null)}>Tutup</Button>
+            </div>
+          </div>
         </div>
-    )
+      )}
+    </div>
+  );
 }

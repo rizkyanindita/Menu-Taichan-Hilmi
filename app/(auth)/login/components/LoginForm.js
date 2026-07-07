@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/Button";
 
@@ -11,6 +11,23 @@ export default function LoginForm() {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+    useEffect(() => {
+        const savedUser = localStorage.getItem("user");
+        if (savedUser) {
+            try {
+                const user = JSON.parse(savedUser);
+                if (user && user.role) {
+                    router.push(`/dashboard?role=${user.role}`);
+                    return;
+                }
+            } catch (e) {
+                localStorage.removeItem("user");
+            }
+        }
+        setIsCheckingAuth(false);
+    }, [router]);
 
     const validCredentials = {
         owner: { password: "123", role: "owner" },
@@ -28,6 +45,7 @@ export default function LoginForm() {
         const user = validCredentials[username.toLowerCase()];
 
         if (user && user.password === password) {
+            localStorage.setItem("user", JSON.stringify({ username: username.toLowerCase(), role: user.role }));
             router.push(`/dashboard?role=${user.role}`);
         } else {
             setError("Password atau username salah");
@@ -53,6 +71,15 @@ export default function LoginForm() {
         "border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-200";
 
     const inputDisabled = "opacity-60 cursor-not-allowed";
+
+    if (isCheckingAuth) {
+        return (
+            <div className="flex flex-col items-center justify-center p-8 space-y-4">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                <p className="text-gray-500 font-medium">Memeriksa sesi...</p>
+            </div>
+        );
+    }
 
     return (
         <form onSubmit={handleLogin} className="space-y-6">
