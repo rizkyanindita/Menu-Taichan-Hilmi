@@ -30,8 +30,8 @@ export default function LoginForm() {
     }, [router]);
 
     const validCredentials = {
-        owner: { password: "123", role: "owner" },
-        staff: { password: "123", role: "staff" },
+        owner: { password: process.env.NEXT_PUBLIC_OWNER_PASSWORD, role: "owner" },
+        staff: { password: process.env.NEXT_PUBLIC_STAFF_PASSWORD, role: "staff" },
     };
 
     const handleLogin = async (e) => {

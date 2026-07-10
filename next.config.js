@@ -24,11 +24,19 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "image.idntimes.com", // Allow all HTTP domains (for development)
+        hostname: "image.idntimes.com", 
       },
       {
         protocol: "https",
-        hostname: "caripromo.id", // Allow all HTTP domains (for development)
+        hostname: "drive.google.com",
+      },
+      {
+        protocol: "https",
+        hostname: "drive.usercontent.google.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.googleusercontent.com",
       },
     ],
   },

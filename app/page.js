@@ -6,7 +6,7 @@ export default function Home() {
     return (
         <div className="flex flex-1 flex-col items-center justify-center gap-4 sm:gap-6 p-4 text-center">
             <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent px-2 leading-tight">
-                QR Menu App
+                BangBoy <br />Taichan Goreng
             </h1>
 
             <div className="flex flex-wrap gap-4 justify-center">

@@ -1,4 +1,12 @@
 import "./globals.css";
+import { Plus_Jakarta_Sans } from "next/font/google";
+
+const jakarta = Plus_Jakarta_Sans({
+    subsets: ["latin"],
+    weight: ["400", "500", "600", "700", "800"],
+    variable: "--font-jakarta",
+    display: "swap",
+});
 
 export const metadata = {
     title: "QR Menu App",
@@ -8,8 +16,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
     return (
-        <html lang="en">
-            <body className="antialiased min-h-screen flex flex-col">
+        <html lang="en" className={jakarta.variable}>
+            <body className={`antialiased min-h-screen flex flex-col font-jakarta`}>
                 <div className="flex-1">{children}</div>
                 <footer className="py-6 text-center text-sm text-gray-500 bg-gray-50 border-t border-gray-100">
                     {/* Menggunakan space-y-1 agar teks atas tetap rapat */}
