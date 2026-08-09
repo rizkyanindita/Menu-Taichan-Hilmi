@@ -37,15 +37,15 @@ export default async function MenuPage({ params }) {
   if (!result.success) {
     if (result.error === "firebase_error") {
       return (
-        <main className="p-4 max-w-2xl mx-auto min-h-screen flex items-center justify-center bg-gray-50/50">
-          <div className="text-center bg-white shadow-2xl shadow-primary/5 rounded-[2rem] p-8 sm:p-10 max-w-sm border border-gray-100/60 w-full relative overflow-hidden">
+        <main className="p-4 max-w-2xl mx-auto min-h-screen flex items-center justify-center bg-gray-50/50 dark:bg-[#0a0a0a]">
+          <div className="text-center bg-white dark:bg-white/[0.03] shadow-2xl shadow-primary/5 rounded-[2rem] p-8 sm:p-10 max-w-sm border border-gray-100/60 dark:border-white/10 w-full relative overflow-hidden">
             {/* Decorative Background Blur */}
-            <div className="absolute -top-20 -right-20 w-48 h-48 bg-orange-100/50 rounded-full blur-3xl"></div>
-            <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-blue-100/50 rounded-full blur-3xl"></div>
+            <div className="absolute -top-20 -right-20 w-48 h-48 bg-orange-100/50 dark:bg-orange-500/10 rounded-full blur-3xl"></div>
+            <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-blue-100/50 dark:bg-blue-500/10 rounded-full blur-3xl"></div>
 
             <div className="relative">
               {/* Icon Container */}
-              <div className="w-24 h-24 bg-orange-50 text-primary rounded-full flex items-center justify-center mx-auto mb-6 ring-8 ring-orange-50/50 shadow-inner">
+              <div className="w-24 h-24 bg-orange-50 dark:bg-orange-500/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6 ring-8 ring-orange-50/50 dark:ring-orange-500/5 shadow-inner">
                 <svg
                   className="w-12 h-12"
                   fill="none"
@@ -61,10 +61,10 @@ export default async function MenuPage({ params }) {
                 </svg>
               </div>
 
-              <h2 className="text-2xl font-extrabold text-gray-900 mb-3 tracking-tight">
+              <h2 className="text-2xl font-extrabold text-gray-900 dark:text-gray-100 mb-3 tracking-tight">
                 Koneksi Timeout
               </h2>
-              <p className="text-gray-500 mb-8 text-[15px] leading-relaxed font-medium">
+              <p className="text-gray-500 dark:text-gray-400 mb-8 text-[15px] leading-relaxed font-medium">
                 Ops! Server membutuhkan waktu terlalu lama untuk merespon.
                 Silakan periksa koneksi internet Anda dan coba kembali.
               </p>

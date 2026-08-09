@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import LoginForm from './components/LoginForm';
 
 export default function LoginPage() {
@@ -9,6 +10,13 @@ export default function LoginPage() {
                     <p className="text-gray-500 mt-2">Sign in to manage orders</p>
                 </div>
                 <LoginForm />
+                <Link
+                    href={`/menu/${process.env.NEXT_PUBLIC_CAFE_ID}`}
+                    className="mt-6 flex items-center justify-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-primary transition-colors"
+                >
+                    Lihat menu tanpa login
+                    <span aria-hidden="true">&rarr;</span>
+                </Link>
             </div>
         </div>
     )

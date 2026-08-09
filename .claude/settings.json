@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000 --max-time 5)",
+      "Bash(sleep 3 && curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000 --max-time 5; echo \"---log---\"; tail -30 /tmp/qr-dev.log)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:*)",
+      "Bash(node --check *)",
+      "Read(//private/tmp/**)"
+    ]
+  }
+}

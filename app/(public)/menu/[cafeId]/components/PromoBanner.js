@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import Image from "next/image";
 
 const convertDriveUrl = (url) => {
   if (!url) return url;
@@ -32,8 +31,9 @@ export default function PromoBanner() {
     text-sm font-medium text-white
     shadow-lg
     transition-all
-    hover:bg-orange-600 hover:shadow-xl
+    hover:bg-orange-600 hover:shadow-xl hover:scale-105
     active:scale-95
+    animate-pulseRing
   "
       >
         <span className="text-base">📝</span>
@@ -46,7 +46,7 @@ export default function PromoBanner() {
           onClick={() => setIsOpen(false)}
         >
           <div
-            className="relative w-full max-w-lg h-[85vh] bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+            className="relative w-full max-w-lg h-[85vh] bg-white dark:bg-[#141414] rounded-2xl overflow-hidden shadow-2xl flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header / Close Button */}
@@ -66,14 +66,12 @@ export default function PromoBanner() {
             >
               {promoImages.map((imgSrc, idx) => (
                 <div key={idx} className="w-full h-full flex-shrink-0 snap-center relative flex items-center justify-center">
-                  <Image
+                  <img
                     src={imgSrc}
                     alt={`Promo Menu ${idx + 1}`}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 600px"
-                    className="object-contain"
-                    priority={idx === 0}
-                    quality={50} // Compress the image to save bandwidth
+                    referrerPolicy="no-referrer"
+                    loading={idx === 0 ? "eager" : "lazy"}
+                    className="absolute inset-0 w-full h-full object-contain"
                   />
                 </div>
               ))}
