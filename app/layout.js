@@ -1,5 +1,6 @@
 import "./globals.css";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -71,6 +72,8 @@ export default function RootLayout({ children }) {
                         </p>
                     </div>
                 </footer>
+
+                <Analytics />
             </body>
         </html>
     );
