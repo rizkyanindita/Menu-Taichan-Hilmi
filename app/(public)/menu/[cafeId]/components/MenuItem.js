@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { highlightParts } from '@/lib/menuSearch';
 
 // Requesting a fixed w1000 for every image — including 88px list thumbnails — makes
 // old/low-end devices decode far more image data than they ever display. Size per context.
@@ -31,16 +32,53 @@ const splitDescription = (description) => {
     };
 };
 
+// Menyorot kata yang benar-benar diketik pengguna, supaya jelas kenapa sebuah
+// item muncul di hasil pencarian.
+const Highlight = ({ text, tokens }) => {
+    if (!tokens || tokens.length === 0) return text;
+    return highlightParts(text, tokens).map((part, i) =>
+        part.match ? (
+            <mark key={i} className="bg-primary/15 dark:bg-primary/25 text-primary dark:text-orange-300 rounded px-0.5">
+                {part.text}
+            </mark>
+        ) : (
+            <span key={i}>{part.text}</span>
+        ),
+    );
+};
+
+// Penanda menu baru sengaja monokrom + satu titik warna merek: cukup menarik
+// mata di antara puluhan kartu, tapi tidak beradu dengan foto makanan dan
+// tidak berkedip. Ukurannya beda tipis antara grid dan list karena thumbnail
+// list cuma 88px.
+const NewBadge = ({ compact = false }) => (
+    <span
+        className={`absolute inline-flex items-center gap-1 rounded-full bg-white/90 dark:bg-black/70 backdrop-blur-sm font-black uppercase text-gray-900 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10
+            ${compact
+                ? "top-1.5 left-1.5 px-1.5 py-0.5 text-[8px] tracking-[0.1em] gap-0.5"
+                : "top-2 left-2 px-2 py-1 text-[9px] tracking-[0.12em]"
+            }`}
+    >
+        <span className={`rounded-full bg-primary ${compact ? "w-1 h-1" : "w-1.5 h-1.5"}`} />
+        Baru
+    </span>
+);
+
 const shimmer =
     "bg-[length:800px_100%] bg-[linear-gradient(90deg,rgba(0,0,0,0.04)_25%,rgba(0,0,0,0.08)_37%,rgba(0,0,0,0.04)_63%)] dark:bg-[linear-gradient(90deg,rgba(255,255,255,0.04)_25%,rgba(255,255,255,0.09)_37%,rgba(255,255,255,0.04)_63%)] animate-shimmer";
 
-export default function MenuItem({ item, isGrid = true }) {
+export default function MenuItem({ item, isGrid = true, searchTokens = [] }) {
     const [imageError, setImageError] = useState(false);
     const [imageLoaded, setImageLoaded] = useState(false);
     const [modalImageLoaded, setModalImageLoaded] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [mounted, setMounted] = useState(false);
     const unit = item.unit || null;
+    // Item bisa masuk lebih dulu tanpa harga (mis. rilis menu baru yang
+    // harganya belum final). "Rp 0" akan terbaca sebagai gratis, jadi harga
+    // kosong ditampilkan sebagai label netral.
+    const priceNumber = Number(item.price);
+    const hasPrice = Number.isFinite(priceNumber) && priceNumber > 0;
     const hasImage = !imageError && item.image && String(item.image).trim() !== "";
     const { tag: descTag, main: descMain } = splitDescription(item.description);
 
@@ -145,12 +183,24 @@ export default function MenuItem({ item, isGrid = true }) {
                             {/* Title & Price */}
                             <div className="flex flex-col gap-3 mb-6">
                                 <h2 id="modal-title" className="text-[24px] sm:text-[28px] font-bold text-gray-900 dark:text-gray-100 leading-tight">
-                                    {item.name}
+                                    <Highlight text={item.name} tokens={searchTokens} />
                                 </h2>
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <span className="inline-flex w-auto rounded-xl bg-orange-50 dark:bg-orange-500/10 px-3 py-1.5 text-sm font-bold text-orange-600 dark:text-orange-400">
-                                        Rp {parseInt(item.price).toLocaleString("id-ID")}
-                                    </span>
+                                    {hasPrice ? (
+                                        <span className="inline-flex w-auto rounded-xl bg-orange-50 dark:bg-orange-500/10 px-3 py-1.5 text-sm font-bold text-orange-600 dark:text-orange-400">
+                                            Rp {priceNumber.toLocaleString("id-ID")}
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex w-auto rounded-xl bg-gray-100 dark:bg-white/10 px-3 py-1.5 text-sm font-bold text-gray-500 dark:text-gray-400">
+                                            Tanya Barista
+                                        </span>
+                                    )}
+                                    {item.isNew && (
+                                        <span className="inline-flex items-center gap-1.5 rounded-xl bg-gray-900 dark:bg-white px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-white dark:text-gray-900">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                            Menu Baru
+                                        </span>
+                                    )}
                                     {unit && (
                                         <span className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest bg-gray-50 dark:bg-white/5 px-2.5 py-1.5 rounded-lg">
                                             Per {unit}
@@ -205,7 +255,9 @@ export default function MenuItem({ item, isGrid = true }) {
                 /* ═══ MENU ITEM GRID CARD ═══ */
                 <div
                     onClick={() => !item.isSoldOut && setShowModal(true)}
-                    className={`relative flex flex-col bg-white dark:bg-white/[0.03] rounded-2xl
+                    /* h-full: kartu harus mengisi tinggi baris grid, kalau tidak
+                       kartu berjudul 1 baris berhenti lebih pendek dari tetangganya */
+                    className={`relative flex flex-col h-full bg-white dark:bg-white/[0.03] rounded-2xl
                                 shadow-[0_2px_10px_rgba(0,0,0,0.04)] border border-gray-100/80 dark:border-white/10
                                 group transition-all duration-300 ease-out overflow-hidden
                                 ${!item.isSoldOut
@@ -236,6 +288,7 @@ export default function MenuItem({ item, isGrid = true }) {
                                 <span className="text-3xl opacity-20">🍽️</span>
                             </div>
                         )}
+                        {item.isNew && !item.isSoldOut && <NewBadge />}
                         {item.isSoldOut && (
                             <div className="absolute inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
                                 <span className="bg-gray-900 dark:bg-white dark:text-gray-900 text-white text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest">
@@ -249,20 +302,26 @@ export default function MenuItem({ item, isGrid = true }) {
                     <div className="p-3.5 flex flex-col flex-1 justify-between gap-3">
                         <div>
                             <h3 className="text-[13px] sm:text-[14px] font-extrabold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
-                                {item.name}
+                                <Highlight text={item.name} tokens={searchTokens} />
                             </h3>
                         </div>
 
                         <div className="flex flex-col gap-2.5">
-                            <div className="flex items-baseline gap-0.5">
-                                <span className="text-[11px] font-bold text-gray-800 dark:text-gray-300">Rp</span>
-                                <span className="text-[14px] sm:text-[15px] font-black text-gray-900 dark:text-gray-100 tracking-tight">
-                                    {parseInt(item.price).toLocaleString("id-ID")}
+                            {hasPrice ? (
+                                <div className="flex items-baseline gap-0.5">
+                                    <span className="text-[11px] font-bold text-gray-800 dark:text-gray-300">Rp</span>
+                                    <span className="text-[14px] sm:text-[15px] font-black text-gray-900 dark:text-gray-100 tracking-tight">
+                                        {priceNumber.toLocaleString("id-ID")}
+                                    </span>
+                                    {unit && (
+                                        <span className="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold ml-1">/{unit}</span>
+                                    )}
+                                </div>
+                            ) : (
+                                <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-gray-400 dark:text-gray-500">
+                                    Tanya Barista
                                 </span>
-                                {unit && (
-                                    <span className="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold ml-1">/{unit}</span>
-                                )}
-                            </div>
+                            )}
 
                             {!item.isSoldOut ? (
                                 <button className="w-full bg-[#34A853] hover:bg-[#2e9649] text-white text-[12px] font-bold py-2 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm">
@@ -311,6 +370,7 @@ export default function MenuItem({ item, isGrid = true }) {
                                 <span className="text-2xl opacity-20">🍽️</span>
                             </div>
                         )}
+                        {item.isNew && !item.isSoldOut && <NewBadge compact />}
                         {item.isSoldOut && (
                             <div className="absolute inset-0 bg-white/60 dark:bg-black/50 flex items-center justify-center">
                                 <span className="bg-gray-900 dark:bg-white dark:text-gray-900 text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider">
@@ -324,7 +384,7 @@ export default function MenuItem({ item, isGrid = true }) {
                     <div className="flex-1 min-w-0 py-0.5 flex flex-col justify-between">
                         <div>
                             <h3 className="text-[15px] font-extrabold text-gray-900 dark:text-gray-100 leading-snug mb-0.5 truncate">
-                                {item.name}
+                                <Highlight text={item.name} tokens={searchTokens} />
                             </h3>
                             {item.description && (
                                 <p className="text-[12px] text-gray-400 dark:text-gray-500 line-clamp-2 leading-relaxed">
@@ -336,15 +396,21 @@ export default function MenuItem({ item, isGrid = true }) {
                             )}
                         </div>
                         <div className="flex items-center justify-between mt-2.5">
-                            <div className="flex items-baseline gap-0.5">
-                                <span className="text-[11px] font-bold text-gray-900 dark:text-gray-300">Rp</span>
-                                <span className="text-[16px] font-black text-gray-900 dark:text-gray-100 tracking-tight">
-                                    {parseInt(item.price).toLocaleString("id-ID")}
+                            {hasPrice ? (
+                                <div className="flex items-baseline gap-0.5">
+                                    <span className="text-[11px] font-bold text-gray-900 dark:text-gray-300">Rp</span>
+                                    <span className="text-[16px] font-black text-gray-900 dark:text-gray-100 tracking-tight">
+                                        {priceNumber.toLocaleString("id-ID")}
+                                    </span>
+                                    {unit && (
+                                        <span className="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold ml-1">/{unit}</span>
+                                    )}
+                                </div>
+                            ) : (
+                                <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-gray-400 dark:text-gray-500">
+                                    Segera
                                 </span>
-                                {unit && (
-                                    <span className="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold ml-1">/{unit}</span>
-                                )}
-                            </div>
+                            )}
                             {!item.isSoldOut && (
                                 <div className="w-7 h-7 rounded-full bg-orange-100 dark:bg-orange-500/15 flex items-center justify-center group-hover:bg-orange-500 group-hover:scale-110 transition-all duration-300">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-orange-500 group-hover:text-white transition-colors">

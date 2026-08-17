@@ -68,6 +68,7 @@ export default function MenuManager() {
     category: "",
     description: "",
     image: "",
+    isNew: false,
   });
 
   // Uses environment variable for multi-tenancy
@@ -159,6 +160,7 @@ export default function MenuManager() {
         category: "",
         description: "",
         image: "",
+        isNew: false,
       });
     } catch (error) {
       console.error(error);
@@ -283,7 +285,7 @@ export default function MenuManager() {
                 setIsCategoryDropdownOpen(false);
                 setIsCloning(false);
                 setEditingItem(null);
-                setNewItem({ name: "", price: "", category: "", description: "", image: "" });
+                setNewItem({ name: "", price: "", category: "", description: "", image: "", isNew: false });
               }
             }}
             disabled={userRole === "staff"}
@@ -488,6 +490,25 @@ export default function MenuManager() {
               />
             </div>
 
+            {/* Tandai menu baru — dipakai untuk badge "Baru" & filter di halaman
+                pelanggan. Sengaja manual (bukan otomatis dari tanggal dibuat)
+                supaya kamu yang menentukan kapan sorotannya dilepas. */}
+            <label className="flex items-center gap-3 p-3.5 rounded-xl border border-gray-200 bg-white cursor-pointer hover:border-primary/40 transition-colors">
+              <input
+                type="checkbox"
+                checked={!!newItem.isNew}
+                onChange={(e) => setNewItem({ ...newItem, isNew: e.target.checked })}
+                className="w-4 h-4 accent-primary cursor-pointer"
+              />
+              <span className="flex-1">
+                <span className="block text-sm font-bold text-gray-900">Tandai sebagai menu baru</span>
+                <span className="block text-xs text-gray-400 mt-0.5">
+                  Muncul badge &ldquo;Baru&rdquo; di kartu menu dan chip filter khusus
+                </span>
+              </span>
+              <span className="text-lg">✨</span>
+            </label>
+
             {/* Action Buttons */}
             <div className="flex gap-3 pt-1">
               <button
@@ -506,7 +527,7 @@ export default function MenuManager() {
                   setShowNewCategoryInput(false);
                   setIsCategoryDropdownOpen(false);
                   setEditingItem(null);
-                  setNewItem({ name: "", price: "", category: "", description: "", image: "" });
+                  setNewItem({ name: "", price: "", category: "", description: "", image: "", isNew: false });
                 }}
                 className="px-5 py-3 text-sm font-semibold rounded-xl
                            border border-gray-200 text-gray-500
@@ -569,6 +590,11 @@ export default function MenuManager() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-gray-900 truncate leading-tight" title={item.name}>
                     {item.name}
+                    {item.isNew && !item.isSoldOut && (
+                      <span className="ml-1.5 text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md align-middle">
+                        BARU
+                      </span>
+                    )}
                     {item.isSoldOut && (
                       <span className="ml-1.5 text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded-md align-middle">
                         HABIS
@@ -616,6 +642,7 @@ export default function MenuManager() {
                         category: item.category,
                         description: item.description || "",
                         image: item.image || "",
+                        isNew: !!item.isNew,
                       });
                     }}
                     className="h-8 px-2.5 text-[11px] font-bold text-blue-500 rounded-lg
