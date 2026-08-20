@@ -2,23 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import NextImage from 'next/image';
 import { highlightParts } from '@/lib/menuSearch';
-
-// Requesting a fixed w1000 for every image — including 88px list thumbnails — makes
-// old/low-end devices decode far more image data than they ever display. Size per context.
-// Some items already have their image field stored as a converted thumbnail URL
-// (?id=...&sz=w1000) rather than a share link, so both formats must be matched —
-// otherwise the width override is silently ignored for those items.
-const convertDriveUrl = (url, width = 1000) => {
-    if (!url) return url;
-    const shareLinkMatch = url.match(/drive\.google\.com\/(?:file\/d\/|drive\/folders\/)([a-zA-Z0-9_-]+)/);
-    const thumbnailMatch = url.match(/drive\.google\.com\/thumbnail\?id=([a-zA-Z0-9_-]+)/);
-    const id = shareLinkMatch?.[1] || thumbnailMatch?.[1];
-    if (id) {
-        return `https://drive.google.com/thumbnail?id=${id}&sz=w${width}`;
-    }
-    return url;
-};
+import { driveImageUrl } from '@/lib/driveImage';
 
 // Descriptions tend to lead with repeated boilerplate ("Disajikan dengan...")
 // and bury the actual differentiator in a trailing "(...)" — surface that first.
@@ -67,7 +53,7 @@ const NewBadge = ({ compact = false }) => (
 const shimmer =
     "bg-[length:800px_100%] bg-[linear-gradient(90deg,rgba(0,0,0,0.04)_25%,rgba(0,0,0,0.08)_37%,rgba(0,0,0,0.04)_63%)] dark:bg-[linear-gradient(90deg,rgba(255,255,255,0.04)_25%,rgba(255,255,255,0.09)_37%,rgba(255,255,255,0.04)_63%)] animate-shimmer";
 
-export default function MenuItem({ item, isGrid = true, searchTokens = [] }) {
+export default function MenuItem({ item, isGrid = true, searchTokens = [], priority = false }) {
     const [imageError, setImageError] = useState(false);
     const [imageLoaded, setImageLoaded] = useState(false);
     const [modalImageLoaded, setModalImageLoaded] = useState(false);
@@ -153,13 +139,15 @@ export default function MenuItem({ item, isGrid = true, searchTokens = [] }) {
                                     {!modalImageLoaded && (
                                         <div className={`absolute inset-0 rounded-t-[24px] ${shimmer}`} />
                                     )}
-                                    <img
-                                        src={convertDriveUrl(item.image)}
+                                    <NextImage
+                                        src={driveImageUrl(item.image, 1000)}
                                         alt={item.name}
-                                        referrerPolicy="no-referrer"
-                                        decoding="async"
+                                        fill
+                                        sizes="(max-width: 640px) 100vw, 520px"
+                                        quality={75}
                                         onLoad={() => setModalImageLoaded(true)}
-                                        className={`w-full h-full object-cover rounded-t-[24px] transition-opacity duration-500 ${modalImageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                                        onError={() => setImageError(true)}
+                                        className={`object-cover rounded-t-[24px] transition-opacity duration-500 ${modalImageLoaded ? 'opacity-100' : 'opacity-0'}`}
                                     />
                                 </>
                             ) : (
@@ -272,15 +260,20 @@ export default function MenuItem({ item, isGrid = true, searchTokens = [] }) {
                                 {!imageLoaded && (
                                     <div className={`absolute inset-0 ${shimmer}`} />
                                 )}
-                                <img
-                                    src={convertDriveUrl(item.image, 400)}
+                                <NextImage
+                                    src={driveImageUrl(item.image, 400)}
                                     alt={item.name}
-                                    referrerPolicy="no-referrer"
-                                    loading="lazy"
-                                    decoding="async"
+                                    fill
+                                    /* Grid 2 kolom di HP, 4 di desktop — beri tahu browser
+                                       lebar slot yang sebenarnya supaya ia memilih kandidat
+                                       srcset terkecil, bukan yang selebar viewport. */
+                                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 240px"
+                                    quality={70}
+                                    priority={priority}
+                                    loading={priority ? undefined : "lazy"}
                                     onLoad={() => setImageLoaded(true)}
                                     onError={() => setImageError(true)}
-                                    className={`w-full h-full object-cover transition-all duration-500 ease-out group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                                    className={`object-cover transition-all duration-500 ease-out group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                                 />
                             </>
                         ) : (
@@ -354,12 +347,15 @@ export default function MenuItem({ item, isGrid = true, searchTokens = [] }) {
                                 {!imageLoaded && (
                                     <div className={`absolute inset-0 ${shimmer}`} />
                                 )}
-                                <img
-                                    src={convertDriveUrl(item.image, 180)}
+                                <NextImage
+                                    src={driveImageUrl(item.image, 180)}
                                     alt={item.name}
-                                    referrerPolicy="no-referrer"
-                                    loading="lazy"
-                                    decoding="async"
+                                    width={96}
+                                    height={96}
+                                    sizes="96px"
+                                    quality={70}
+                                    priority={priority}
+                                    loading={priority ? undefined : "lazy"}
                                     onLoad={() => setImageLoaded(true)}
                                     onError={() => setImageError(true)}
                                     className={`w-full h-full object-cover transition-all duration-500 ease-out group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}

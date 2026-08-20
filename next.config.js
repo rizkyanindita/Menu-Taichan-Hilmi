@@ -39,6 +39,15 @@ const nextConfig = {
         hostname: "*.googleusercontent.com",
       },
     ],
+    // AVIF/WebP memangkas 40-70% byte dibanding JPEG asli dari Drive.
+    formats: ["image/avif", "image/webp"],
+    // Hasil optimasi ditahan 30 hari di CDN Vercel, jadi Google Drive hanya
+    // dihubungi sekali per (gambar x ukuran) — bukan sekali per pengunjung.
+    minimumCacheTTL: 60 * 60 * 24 * 30,
+    // Ukuran nyata yang dipakai UI: thumbnail list 88px, kartu grid, modal.
+    imageSizes: [96, 128, 180, 256, 384],
+    deviceSizes: [420, 640, 828, 1080],
+    qualities: [60, 70, 75],
   },
   // Silence the error about webpack config being present while using Turbopack
   // Since next-pwa injects webpack config, we need to acknowledge it or disable turbopack

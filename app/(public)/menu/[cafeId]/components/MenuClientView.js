@@ -6,19 +6,11 @@ import Link from "next/link";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 import { searchMenuItems, tokenize } from "@/lib/menuSearch";
+import NextImage from "next/image";
 import MenuItem from "./MenuItem";
+import { driveImageUrl } from "@/lib/driveImage";
 import PromoBanner from "./PromoBanner";
 
-const convertDriveUrl = (url, width = 1000) => {
-  if (!url) return url;
-  const shareLinkMatch = url.match(/drive\.google\.com\/(?:file\/d\/|drive\/folders\/)([a-zA-Z0-9_-]+)/);
-  const thumbnailMatch = url.match(/drive\.google\.com\/thumbnail\?id=([a-zA-Z0-9_-]+)/);
-  const id = shareLinkMatch?.[1] || thumbnailMatch?.[1];
-  if (id) {
-    return `https://drive.google.com/thumbnail?id=${id}&sz=w${width}`;
-  }
-  return url;
-};
 
 const categoryIcon = (name = "") => {
   const n = name.toLowerCase();
@@ -286,7 +278,10 @@ export default function MenuClientView({ initialItems, cafeId, cafeName }) {
           className="animate-slideUp h-full"
           style={{ animationDelay: `${Math.min(i, 8) * 40}ms`, animationFillMode: "backwards" }}
         >
-          <MenuItem item={item} isGrid={isGrid} searchTokens={searchTokens} />
+          {/* Kartu di layar pertama diambil eager dengan fetchPriority tinggi;
+              sisanya lazy. Tanpa ini semua gambar bersaing di antrean yang sama
+              dan justru yang terlihat duluan selesai belakangan. */}
+          <MenuItem item={item} isGrid={isGrid} searchTokens={searchTokens} priority={i < (isGrid ? 6 : 4)} />
         </div>
       ))}
     </div>
@@ -450,10 +445,14 @@ export default function MenuClientView({ initialItems, cafeId, cafeName }) {
       >
         <div className="relative z-10 flex flex-col items-center px-4 animate-fadeIn">
           <div className="mb-5 relative overflow-visible animate-popIn">
-            <img
-              src={convertDriveUrl(process.env.NEXT_PUBLIC_CAFE_LOGO, 220)}
+            <NextImage
+              src={driveImageUrl(process.env.NEXT_PUBLIC_CAFE_LOGO, 220)}
               alt="Logo Cafe"
-              referrerPolicy="no-referrer"
+              width={110}
+              height={110}
+              sizes="110px"
+              /* Logo adalah LCP candidate di atas lipatan: jangan pernah lazy. */
+              priority
               className="w-[110px] h-[110px] object-contain rounded-[1.5rem] shadow-lg border-4 border-white dark:border-white/10 bg-white"
             />
           </div>

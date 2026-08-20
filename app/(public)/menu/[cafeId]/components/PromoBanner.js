@@ -1,21 +1,14 @@
 "use client";
 import { useState } from "react";
+import NextImage from "next/image";
+import { driveImageUrl } from "@/lib/driveImage";
 
-const convertDriveUrl = (url) => {
-  if (!url) return url;
-  const driveRegex = /drive\.google\.com\/(?:file\/d\/|drive\/folders\/)([a-zA-Z0-9_-]+)/;
-  const match = url.match(driveRegex);
-  if (match && match[1]) {
-    return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
-  }
-  return url;
-};
 
 export default function PromoBanner() {
   const [isOpen, setIsOpen] = useState(false);
   // Read from .env and split into an array, supporting comma-separated URLs
   const rawUrls = process.env.NEXT_PUBLIC_ALL_MENU || "";
-  const promoImages = rawUrls.split(",").map(url => convertDriveUrl(url.trim())).filter(url => url.length > 0);
+  const promoImages = rawUrls.split(",").map(url => driveImageUrl(url.trim(), 1000)).filter(url => url.length > 0);
 
   if (promoImages.length === 0) return null; // Don't show button if no images configured!
 
@@ -66,12 +59,14 @@ export default function PromoBanner() {
             >
               {promoImages.map((imgSrc, idx) => (
                 <div key={idx} className="w-full h-full flex-shrink-0 snap-center relative flex items-center justify-center">
-                  <img
+                  <NextImage
                     src={imgSrc}
                     alt={`Promo Menu ${idx + 1}`}
-                    referrerPolicy="no-referrer"
+                    fill
+                    sizes="(max-width: 640px) 100vw, 512px"
+                    quality={75}
                     loading={idx === 0 ? "eager" : "lazy"}
-                    className="absolute inset-0 w-full h-full object-contain"
+                    className="object-contain"
                   />
                 </div>
               ))}

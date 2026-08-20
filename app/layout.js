@@ -26,6 +26,11 @@ export default function RootLayout({ children }) {
     return (
         <html lang="en" className={jakarta.variable} suppressHydrationWarning>
             <head>
+                {/* Handshake TLS ke host gambar Google (~200-400ms di 4G lambat)
+                    dimulai bersamaan dengan parsing HTML, bukan menunggu kartu
+                    menu pertama benar-benar dirender. */}
+                <link rel="preconnect" href="https://lh3.googleusercontent.com" crossOrigin="anonymous" />
+                <link rel="dns-prefetch" href="https://lh3.googleusercontent.com" />
                 <script
                     dangerouslySetInnerHTML={{
                         __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}})()`,

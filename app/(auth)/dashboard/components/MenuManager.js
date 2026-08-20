@@ -12,17 +12,8 @@ import {
   setDoc,
   getDoc,
 } from "firebase/firestore";
+import { driveImageUrl } from "@/lib/driveImage";
 
-const convertDriveUrl = (url) => {
-  if (!url) return url;
-  const driveRegex = /drive\.google\.com\/(?:file\/d\/|drive\/folders\/)([a-zA-Z0-9_-]+)/;
-  const match = url.match(driveRegex);
-  if (match && match[1]) {
-    // Using thumbnail API bypasses some embed restrictions and allows compression
-    return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
-  }
-  return url;
-};
 
 export default function MenuManager() {
   const isMenuManagerDisabled = process.env.NEXT_PUBLIC_DISABLE_MENU_MANAGER === "1";
@@ -486,7 +477,7 @@ export default function MenuManager() {
                            focus:border-primary/50 focus:ring-2 focus:ring-primary/10
                            outline-none transition-all duration-200 placeholder:text-gray-400 font-medium"
                 value={newItem.image}
-                onChange={(e) => setNewItem({ ...newItem, image: convertDriveUrl(e.target.value) })}
+                onChange={(e) => setNewItem({ ...newItem, image: driveImageUrl(e.target.value, 1000) })}
               />
             </div>
 
@@ -572,7 +563,7 @@ export default function MenuManager() {
                 <div className="w-14 h-14 rounded-xl overflow-hidden relative flex-shrink-0 bg-gray-100 ring-1 ring-gray-200/60 group-hover:ring-primary/20 transition-all">
                   {item.image && !imageErrors[item.id] && (item.image.startsWith("/") || item.image.startsWith("http")) ? (
                     <Image
-                      src={convertDriveUrl(item.image)}
+                      src={driveImageUrl(item.image, 180)}
                       alt={item.name}
                       fill
                       className="object-cover"
@@ -695,7 +686,7 @@ export default function MenuManager() {
             <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-50 relative overflow-hidden">
               {selectedItem.image && !imageErrors[selectedItem.id] && (selectedItem.image.startsWith("/") || selectedItem.image.startsWith("http")) ? (
                 <Image
-                  src={convertDriveUrl(selectedItem.image)}
+                  src={driveImageUrl(selectedItem.image, 800)}
                   alt={selectedItem.name}
                   fill
                   className="object-cover"
