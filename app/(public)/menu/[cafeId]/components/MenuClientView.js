@@ -270,6 +270,15 @@ export default function MenuClientView({ initialItems, cafeId, cafeName }) {
     );
   }
 
+  // Anggaran "eager" harus dihitung lintas-section. renderItems dipanggil sekali
+  // per kategori, jadi indeks lokal `i` selalu mulai dari 0 lagi: memakainya apa
+  // adanya membuat SETIAP kategori menyumbang 6 gambar eager — terukur 45
+  // <link rel="preload"> sekaligus di HTML, yang justru memperlambat karena
+  // semuanya berebut bandwidth dengan gambar yang benar-benar terlihat.
+  const eagerBudget = isGrid ? 6 : 4;
+  let eagerUsed = 0;
+  const takeEager = () => (eagerUsed < eagerBudget ? (eagerUsed++, true) : false);
+
   const renderItems = (list) => (
     <div className={isGrid ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4" : "flex flex-col gap-1"}>
       {list.map((item, i) => (
@@ -278,10 +287,7 @@ export default function MenuClientView({ initialItems, cafeId, cafeName }) {
           className="animate-slideUp h-full"
           style={{ animationDelay: `${Math.min(i, 8) * 40}ms`, animationFillMode: "backwards" }}
         >
-          {/* Kartu di layar pertama diambil eager dengan fetchPriority tinggi;
-              sisanya lazy. Tanpa ini semua gambar bersaing di antrean yang sama
-              dan justru yang terlihat duluan selesai belakangan. */}
-          <MenuItem item={item} isGrid={isGrid} searchTokens={searchTokens} priority={i < (isGrid ? 6 : 4)} />
+          <MenuItem item={item} isGrid={isGrid} searchTokens={searchTokens} priority={takeEager()} />
         </div>
       ))}
     </div>

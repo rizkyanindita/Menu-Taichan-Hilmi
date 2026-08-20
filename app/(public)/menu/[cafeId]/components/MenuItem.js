@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import NextImage from 'next/image';
 import { highlightParts } from '@/lib/menuSearch';
-import { driveImageUrl } from '@/lib/driveImage';
+import { menuImageSrc } from '@/lib/driveImage';
 
 // Descriptions tend to lead with repeated boilerplate ("Disajikan dengan...")
 // and bury the actual differentiator in a trailing "(...)" — surface that first.
@@ -59,6 +58,21 @@ export default function MenuItem({ item, isGrid = true, searchTokens = [], prior
     const [modalImageLoaded, setModalImageLoaded] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [mounted, setMounted] = useState(false);
+
+    // URL kartu dan URL modal dihitung sekali dan dipakai konsisten: yang sama
+    // persis dipakai ulang sebagai placeholder di modal, jadi dijamin cache hit.
+    const thumbSrc = menuImageSrc(item.image, isGrid ? "grid" : "list");
+    const detailSrc = menuImageSrc(item.image, "detail");
+
+    // Gambar modal mulai diunduh saat pengguna menyentuh/menyorot kartu, bukan
+    // saat modal selesai dipasang. Jeda pointerdown → paint modal biasanya
+    // 150-300ms, dan itu head start gratis untuk request yang paling lambat.
+    const prefetchDetail = () => {
+        if (!detailSrc || imageError || typeof window === "undefined") return;
+        const img = new window.Image();
+        img.decoding = "async";
+        img.src = detailSrc;
+    };
     const unit = item.unit || null;
     // Item bisa masuk lebih dulu tanpa harga (mis. rilis menu baru yang
     // harganya belum final). "Rp 0" akan terbaca sebagai gratis, jadi harga
@@ -136,18 +150,28 @@ export default function MenuItem({ item, isGrid = true, searchTokens = [], prior
                         <div className="relative w-full aspect-[16/9] bg-gray-100 dark:bg-white/5 shrink-0 overflow-hidden">
                             {hasImage ? (
                                 <>
-                                    {!modalImageLoaded && (
-                                        <div className={`absolute inset-0 rounded-t-[24px] ${shimmer}`} />
+                                    {/* Placeholder = thumbnail yang BARU SAJA diunduh kartu.
+                                        Sudah ada di cache browser, jadi tampil di frame pertama
+                                        modal — pengguna langsung melihat fotonya, bukan shimmer,
+                                        lalu menajam saat versi besar tiba. */}
+                                    {!modalImageLoaded && thumbSrc && (
+                                        <img
+                                            src={thumbSrc}
+                                            alt=""
+                                            aria-hidden="true"
+                                            className="absolute inset-0 w-full h-full object-cover rounded-t-[24px] blur-[6px] scale-105"
+                                        />
                                     )}
-                                    <NextImage
-                                        src={driveImageUrl(item.image, 1000)}
+                                    <img
+                                        src={detailSrc}
                                         alt={item.name}
-                                        fill
-                                        sizes="(max-width: 640px) 100vw, 520px"
-                                        quality={75}
+                                        decoding="async"
+                                        /* Modal dibuka atas permintaan eksplisit: request-nya harus
+                                           menyalip antrean thumbnail lazy yang masih jalan. */
+                                        fetchPriority="high"
                                         onLoad={() => setModalImageLoaded(true)}
                                         onError={() => setImageError(true)}
-                                        className={`object-cover rounded-t-[24px] transition-opacity duration-500 ${modalImageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                                        className={`absolute inset-0 w-full h-full object-cover rounded-t-[24px] transition-opacity duration-300 ${modalImageLoaded ? 'opacity-100' : 'opacity-0'}`}
                                     />
                                 </>
                             ) : (
@@ -243,6 +267,8 @@ export default function MenuItem({ item, isGrid = true, searchTokens = [], prior
                 /* ═══ MENU ITEM GRID CARD ═══ */
                 <div
                     onClick={() => !item.isSoldOut && setShowModal(true)}
+                    onPointerEnter={prefetchDetail}
+                    onPointerDown={prefetchDetail}
                     /* h-full: kartu harus mengisi tinggi baris grid, kalau tidak
                        kartu berjudul 1 baris berhenti lebih pendek dari tetangganya */
                     className={`relative flex flex-col h-full bg-white dark:bg-white/[0.03] rounded-2xl
@@ -260,20 +286,15 @@ export default function MenuItem({ item, isGrid = true, searchTokens = [], prior
                                 {!imageLoaded && (
                                     <div className={`absolute inset-0 ${shimmer}`} />
                                 )}
-                                <NextImage
-                                    src={driveImageUrl(item.image, 400)}
+                                <img
+                                    src={thumbSrc}
                                     alt={item.name}
-                                    fill
-                                    /* Grid 2 kolom di HP, 4 di desktop — beri tahu browser
-                                       lebar slot yang sebenarnya supaya ia memilih kandidat
-                                       srcset terkecil, bukan yang selebar viewport. */
-                                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 240px"
-                                    quality={70}
-                                    priority={priority}
-                                    loading={priority ? undefined : "lazy"}
+                                    decoding="async"
+                                    loading={priority ? "eager" : "lazy"}
+                                    fetchPriority={priority ? "high" : "low"}
                                     onLoad={() => setImageLoaded(true)}
                                     onError={() => setImageError(true)}
-                                    className={`object-cover transition-all duration-500 ease-out group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ease-out group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                                 />
                             </>
                         ) : (
@@ -332,6 +353,8 @@ export default function MenuItem({ item, isGrid = true, searchTokens = [], prior
                 /* ═══ MENU ITEM LIST CARD ═══ */
                 <div
                     onClick={() => !item.isSoldOut && setShowModal(true)}
+                    onPointerEnter={prefetchDetail}
+                    onPointerDown={prefetchDetail}
                     className={`relative flex gap-4 p-4 my-2 bg-white dark:bg-white/[0.03] rounded-[1.4rem]
                                 shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-gray-100/60 dark:border-white/10
                                 group transition-all duration-300 ease-out
@@ -347,15 +370,14 @@ export default function MenuItem({ item, isGrid = true, searchTokens = [], prior
                                 {!imageLoaded && (
                                     <div className={`absolute inset-0 ${shimmer}`} />
                                 )}
-                                <NextImage
-                                    src={driveImageUrl(item.image, 180)}
+                                <img
+                                    src={thumbSrc}
                                     alt={item.name}
-                                    width={96}
-                                    height={96}
-                                    sizes="96px"
-                                    quality={70}
-                                    priority={priority}
-                                    loading={priority ? undefined : "lazy"}
+                                    width={88}
+                                    height={88}
+                                    decoding="async"
+                                    loading={priority ? "eager" : "lazy"}
+                                    fetchPriority={priority ? "high" : "low"}
                                     onLoad={() => setImageLoaded(true)}
                                     onError={() => setImageError(true)}
                                     className={`w-full h-full object-cover transition-all duration-500 ease-out group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
