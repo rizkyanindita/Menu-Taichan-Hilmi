@@ -54,32 +54,75 @@ const CloseIcon = (props) => (
   </svg>
 );
 
-const LayoutToggle = ({ isGrid, onToggle, className = "" }) => (
-  <button
-    onClick={onToggle}
-    aria-label="Ubah tampilan"
-    title={isGrid ? "Ubah ke List" : "Ubah ke Kotak"}
-    className={`flex items-center justify-center rounded-xl bg-white dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200/70 dark:border-white/10 shadow-sm transition-colors ${className}`}
-  >
-    {isGrid ? (
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="8" y1="6" x2="21" y2="6" />
-        <line x1="8" y1="12" x2="21" y2="12" />
-        <line x1="8" y1="18" x2="21" y2="18" />
-        <line x1="3" y1="6" x2="3.01" y2="6" />
-        <line x1="3" y1="12" x2="3.01" y2="12" />
-        <line x1="3" y1="18" x2="3.01" y2="18" />
-      </svg>
-    ) : (
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="7" height="7" rx="1.5" />
-        <rect x="14" y="3" width="7" height="7" rx="1.5" />
-        <rect x="14" y="14" width="7" height="7" rx="1.5" />
-        <rect x="3" y="14" width="7" height="7" rx="1.5" />
-      </svg>
-    )}
-  </button>
+const GridIcon = (props) => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="3" y="3" width="7" height="7" rx="1.5" />
+    <rect x="14" y="3" width="7" height="7" rx="1.5" />
+    <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    <rect x="3" y="14" width="7" height="7" rx="1.5" />
+  </svg>
 );
+
+const ListIcon = (props) => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <line x1="8" y1="6" x2="21" y2="6" />
+    <line x1="8" y1="12" x2="21" y2="12" />
+    <line x1="8" y1="18" x2="21" y2="18" />
+    <line x1="3" y1="6" x2="3.01" y2="6" />
+    <line x1="3" y1="12" x2="3.01" y2="12" />
+    <line x1="3" y1="18" x2="3.01" y2="18" />
+  </svg>
+);
+
+// Sebelumnya satu tombol dengan SATU ikon yang berganti makna (menampilkan
+// tampilan TUJUAN, bukan tampilan aktif) — pengguna harus menerka dulu, dan
+// title="..." (tooltip hover) sama sekali tidak berguna di layar sentuh, yang
+// notabene 100% traffic menu QR ini. Grid/list adalah salah satu dari sedikit
+// kasus di mana ikon-tanpa-teks aman dipakai — TAPI hanya kalau kedua opsi
+// ditampilkan sekaligus dalam satu segmented control dengan status aktif yang
+// jelas, bukan satu ikon yang berganti-ganti. (ref: NN/G icon usability —
+// hindari label hover-only; pola grid/list toggle umum di Drive/Airbnb/Trello.)
+// withLabel: dua ikon berdampingan ternyata masih tidak cukup untuk pengguna
+// yang benar-benar belum pernah melihat ikon grid/list — feedback lapangan dari
+// pelanggan awam. Sesuai prinsip yang sama (NN/G: ikon butuh teks kecuali
+// maknanya universal), begitu terbukti TIDAK universal untuk audiens ini,
+// solusinya adalah teks, bukan ikon yang lebih besar. Dipasang hanya di
+// kemunculan PERTAMA (header dekat "KATEGORI", sebelum pengguna sempat
+// scroll) supaya pola belajarnya benar: lihat kata "Kotak"/"List" sekali di
+// sana, lalu ikon-saja di bar sticky (setelah scroll) tinggal mengingatkan.
+const LayoutToggle = ({ isGrid, onToggle, className = "", withLabel = false }) => {
+  const activeCls = "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm";
+  const inactiveCls = "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300";
+  const segmentCls = withLabel ? "px-3 gap-1.5" : "flex-1";
+  return (
+    <div
+      role="group"
+      aria-label="Tampilan menu"
+      className={`inline-flex items-center gap-0.5 rounded-xl bg-gray-100/80 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 p-1 ${className}`}
+    >
+      <button
+        type="button"
+        onClick={() => !isGrid && onToggle()}
+        aria-pressed={isGrid}
+        aria-label="Tampilan kotak"
+        className={`h-full flex items-center justify-center rounded-lg transition-colors ${segmentCls} ${isGrid ? activeCls : inactiveCls}`}
+      >
+        <GridIcon />
+        {withLabel && <span className="text-[12px] font-bold">Kotak</span>}
+      </button>
+      <button
+        type="button"
+        onClick={() => isGrid && onToggle()}
+        aria-pressed={!isGrid}
+        aria-label="Tampilan list"
+        className={`h-full flex items-center justify-center rounded-lg transition-colors ${segmentCls} ${!isGrid ? activeCls : inactiveCls}`}
+      >
+        <ListIcon />
+        {withLabel && <span className="text-[12px] font-bold">List</span>}
+      </button>
+    </div>
+  );
+};
 
 /* Chip kategori dipakai di dua tempat (blok utama & bottom sheet) — satu
    komponen supaya state aktif/hitungannya tidak pernah beda tampilan. */
@@ -382,7 +425,11 @@ export default function MenuClientView({ initialItems, cafeId, cafeName }) {
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <div className="bg-white/85 dark:bg-[#0f0f0f]/85 backdrop-blur-xl border-b border-gray-200/60 dark:border-white/10">
-          <div className="max-w-2xl mx-auto px-4 py-2.5 flex items-center gap-2">
+          {/* pr-16, bukan pr-4: ThemeToggle mengambang fixed di pojok kanan atas
+              (right-4, z-50) dan bar ini juga fixed top-0 (z-40) — begitu keduanya
+              tampil bersamaan saat scroll, item paling kanan di baris ini akan
+              tertutup separuh oleh pil tema kecuali diberi ruang aman selebar itu. */}
+          <div className="max-w-2xl mx-auto pl-4 pr-16 py-2.5 flex items-center gap-2">
             <div className="relative flex-1 min-w-0">
               <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
                 <SearchIcon width="16" height="16" />
@@ -393,7 +440,11 @@ export default function MenuClientView({ initialItems, cafeId, cafeName }) {
                 value={query}
                 onChange={(e) => handleQueryChange(e.target.value)}
                 onKeyDown={searchKeyDown}
-                placeholder="Cari menu…"
+                /* Baris ini berbagi ruang dengan pil Kategori + toggle tampilan + jarak aman
+                   ThemeToggle yang mengambang di pojok — placeholder pendek karena ikon kaca
+                   pembesar sudah menjelaskan konteksnya, sementara "Cari menu…" kepotong jadi
+                   satu huruf saja di lebar layar seperti ini. */
+                placeholder="Cari…"
                 aria-label="Cari menu"
                 enterKeyHint="search"
                 autoComplete="off"
@@ -434,7 +485,7 @@ export default function MenuClientView({ initialItems, cafeId, cafeName }) {
               </svg>
             </button>
 
-            <LayoutToggle isGrid={isGrid} onToggle={() => setIsGrid(!isGrid)} className="w-11 h-11 shrink-0" />
+            <LayoutToggle isGrid={isGrid} onToggle={() => setIsGrid(!isGrid)} className="h-11 w-[68px] shrink-0" />
           </div>
         </div>
       </div>
@@ -511,7 +562,7 @@ export default function MenuClientView({ initialItems, cafeId, cafeName }) {
             <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">
               Kategori
             </h2>
-            <LayoutToggle isGrid={isGrid} onToggle={() => setIsGrid(!isGrid)} className="w-9 h-9" />
+            <LayoutToggle isGrid={isGrid} onToggle={() => setIsGrid(!isGrid)} withLabel className="h-9 w-auto" />
           </div>
 
           <div className="flex flex-wrap gap-2">
