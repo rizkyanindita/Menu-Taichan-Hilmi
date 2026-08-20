@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { highlightParts } from '@/lib/menuSearch';
 import { menuImageSrc } from '@/lib/driveImage';
@@ -63,6 +63,20 @@ export default function MenuItem({ item, isGrid = true, searchTokens = [], prior
     // persis dipakai ulang sebagai placeholder di modal, jadi dijamin cache hit.
     const thumbSrc = menuImageSrc(item.image, isGrid ? "grid" : "list");
     const detailSrc = menuImageSrc(item.image, "detail");
+
+    // <img> yang selesai dimuat SEBELUM React sempat memasang handler-nya tidak
+    // akan pernah mengirim onLoad — dan itu kasus yang lazim, bukan langka:
+    // gambar eager biasanya sudah tuntas saat hydration berjalan. Akibatnya
+    // `imageLoaded` tertahan false dan kelas opacity-0 membuat gambar yang
+    // sebenarnya sudah terunduh utuh tampak sebagai kotak kosong selamanya.
+    // next/image menangani ini diam-diam di dalam; begitu kita pakai <img>
+    // biasa demi URL yang deterministik, pemeriksaannya harus dilakukan sendiri.
+    const thumbRef = useCallback((node) => {
+        if (node && node.complete && node.naturalWidth > 0) setImageLoaded(true);
+    }, []);
+    const detailRef = useCallback((node) => {
+        if (node && node.complete && node.naturalWidth > 0) setModalImageLoaded(true);
+    }, []);
 
     // Gambar modal mulai diunduh saat pengguna menyentuh/menyorot kartu, bukan
     // saat modal selesai dipasang. Jeda pointerdown → paint modal biasanya
@@ -163,6 +177,7 @@ export default function MenuItem({ item, isGrid = true, searchTokens = [], prior
                                         />
                                     )}
                                     <img
+                                        ref={detailRef}
                                         src={detailSrc}
                                         alt={item.name}
                                         decoding="async"
@@ -287,6 +302,7 @@ export default function MenuItem({ item, isGrid = true, searchTokens = [], prior
                                     <div className={`absolute inset-0 ${shimmer}`} />
                                 )}
                                 <img
+                                    ref={thumbRef}
                                     src={thumbSrc}
                                     alt={item.name}
                                     decoding="async"
@@ -371,6 +387,7 @@ export default function MenuItem({ item, isGrid = true, searchTokens = [], prior
                                     <div className={`absolute inset-0 ${shimmer}`} />
                                 )}
                                 <img
+                                    ref={thumbRef}
                                     src={thumbSrc}
                                     alt={item.name}
                                     width={88}
