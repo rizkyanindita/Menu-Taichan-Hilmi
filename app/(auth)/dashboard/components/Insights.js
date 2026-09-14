@@ -2,7 +2,11 @@ import { TrendingUp, ShoppingBag, Lock } from "lucide-react";
 
 export default function Insights() {
   return (
-    <div className="relative">
+    // self-start: cegah grid menyamakan tinggi kartu ini dengan MenuManager
+    // di sebelahnya — tanpa ini, kartu (dan overlay "Not Available" di
+    // dalamnya) ikut melar/menyusut tiap MenuManager berubah tinggi (buka
+    // form tambah, ganti halaman, dst), jadi badge-nya kelihatan "loncat".
+    <div className="relative self-start">
       {/* ── Disabled Content (greyed out) ── */}
       <section
         className="
@@ -117,15 +121,20 @@ export default function Insights() {
         </p>
 
         {/* Sub-label */}
-        <span
+        <a
+          href="https://wa.me/6287766633400"
+          target="_blank"
+          rel="noopener noreferrer"
           className="
+                    pointer-events-auto cursor-pointer
                     text-xs font-semibold tracking-widest uppercase
-                    text-white bg-gray-500
+                    text-white bg-gray-500 hover:bg-gray-600
                     px-4 py-1.5 rounded-full
+                    transition-colors
                 "
         >
           Upgrade to Access
-        </span>
+        </a>
       </div>
     </div>
   );
