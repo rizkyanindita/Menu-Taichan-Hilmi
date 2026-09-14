@@ -13,7 +13,20 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { driveImageUrl } from "@/lib/driveImage";
+import { getItemVariants, getVariantPriceRange } from "@/lib/variants";
 
+// Objek form kosong. `variants` diisi 2 baris kosong sebagai starting point
+// untuk kasus umum (mis. Frozen/Goreng) — boleh ditambah/dikurangi di form.
+const createEmptyItem = () => ({
+  name: "",
+  price: "",
+  category: "",
+  description: "",
+  image: "",
+  isNew: false,
+  hasVariants: false,
+  variants: [{ label: "", price: "" }, { label: "", price: "" }],
+});
 
 export default function MenuManager() {
   const isMenuManagerDisabled = process.env.NEXT_PUBLIC_DISABLE_MENU_MANAGER === "1";
@@ -55,14 +68,7 @@ export default function MenuManager() {
   };
 
   // Form State
-  const [newItem, setNewItem] = useState({
-    name: "",
-    price: "",
-    category: "",
-    description: "",
-    image: "",
-    isNew: false,
-  });
+  const [newItem, setNewItem] = useState(createEmptyItem());
 
   // Uses environment variable for multi-tenancy
   const CAFE_ID = process.env.NEXT_PUBLIC_CAFE_ID || "demo-cafe";
@@ -100,8 +106,40 @@ export default function MenuManager() {
     return () => unsub();
   }, []);
 
+  // Bangun field harga eksplisit: item HANYA punya `price` ATAU `variants`,
+  // tidak pernah dua-duanya — supaya tidak ada field basi tertinggal saat
+  // pengguna pindah mode (polos <-> varian).
+  const buildPriceFields = () => {
+    if (newItem.hasVariants) {
+      const cleanVariants = newItem.variants
+        .map((v) => ({ label: v.label.trim(), price: parseFloat(v.price) }))
+        .filter((v) => v.label && Number.isFinite(v.price) && v.price > 0);
+      return cleanVariants.length > 0 ? { variants: cleanVariants } : null;
+    }
+    const priceNumber = parseFloat(newItem.price);
+    return Number.isFinite(priceNumber) && priceNumber >= 0 ? { price: priceNumber } : null;
+  };
+
   const handleSubmitItem = async (e) => {
     e.preventDefault();
+
+    const priceFields = buildPriceFields();
+    if (!priceFields) {
+      alert(
+        newItem.hasVariants
+          ? "Isi minimal 1 varian dengan label dan harga yang valid"
+          : "Harga tidak valid",
+      );
+      return;
+    }
+
+    const commonFields = {
+      name: newItem.name,
+      category: newItem.category,
+      description: newItem.description,
+      image: newItem.image,
+      isNew: !!newItem.isNew,
+    };
 
     try {
       const docRef = doc(db, "menus", CAFE_ID);
@@ -115,9 +153,10 @@ export default function MenuManager() {
         updatedItems = currentItems.map((item) =>
           item.id === editingItem.id
             ? {
-                ...item,
-                ...newItem,
-                price: parseFloat(newItem.price),
+                id: item.id,
+                isSoldOut: !!item.isSoldOut,
+                ...commonFields,
+                ...priceFields,
               }
             : item,
         );
@@ -125,9 +164,9 @@ export default function MenuManager() {
         // ➕ ADD MODE
         const itemToAdd = {
           id: Date.now(),
-          ...newItem,
-          price: parseFloat(newItem.price),
           isSoldOut: false,
+          ...commonFields,
+          ...priceFields,
         };
 
         updatedItems = [...currentItems, itemToAdd];
@@ -147,14 +186,7 @@ export default function MenuManager() {
       setShowNewCategoryInput(false);
       setIsCategoryDropdownOpen(false);
       setEditingItem(null);
-      setNewItem({
-        name: "",
-        price: "",
-        category: "",
-        description: "",
-        image: "",
-        isNew: false,
-      });
+      setNewItem(createEmptyItem());
     } catch (error) {
       console.error(error);
       alert("Gagal menyimpan menu");
@@ -307,7 +339,7 @@ export default function MenuManager() {
                 setIsCategoryDropdownOpen(false);
                 setIsCloning(false);
                 setEditingItem(null);
-                setNewItem({ name: "", price: "", category: "", description: "", image: "", isNew: false });
+                setNewItem(createEmptyItem());
               }
             }}
             disabled={userRole === "staff"}
@@ -395,6 +427,23 @@ export default function MenuManager() {
                 onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
               />
             </div>
+
+            {/* Toggle: produk polos vs produk dengan pilihan (varian) */}
+            <label className="flex items-center gap-3 p-3.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 cursor-pointer hover:border-primary/40 transition-colors">
+              <input
+                type="checkbox"
+                checked={!!newItem.hasVariants}
+                onChange={(e) => setNewItem({ ...newItem, hasVariants: e.target.checked })}
+                className="w-4 h-4 accent-primary cursor-pointer"
+              />
+              <span className="flex-1">
+                <span className="block text-sm font-bold text-gray-900 dark:text-gray-100">Produk punya pilihan (varian)</span>
+                <span className="block text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                  Misal Frozen/Goreng atau Isi 3/Isi 5, masing-masing harga beda
+                </span>
+              </span>
+              <span className="text-lg">🧩</span>
+            </label>
 
             {/* Price + Category */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -504,6 +553,76 @@ export default function MenuManager() {
               </div>
             </div>
 
+            {/* Variant rows — muncul hanya kalau toggle "produk dengan pilihan" aktif */}
+            {newItem.hasVariants && (
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                  Varian &amp; Harga <span className="text-red-400">*</span>
+                </label>
+                <div className="space-y-2">
+                  {newItem.variants.map((variant, idx) => (
+                    <div key={idx} className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Label, mis. Frozen"
+                        className="flex-1 min-w-0 px-4 py-3 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl
+                                   focus:border-primary/50 focus:ring-2 focus:ring-primary/10
+                                   outline-none transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 font-medium"
+                        value={variant.label}
+                        onChange={(e) => {
+                          const updated = [...newItem.variants];
+                          updated[idx] = { ...updated[idx], label: e.target.value };
+                          setNewItem({ ...newItem, variants: updated });
+                        }}
+                      />
+                      <div className="relative w-32 sm:w-36 shrink-0">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-gray-500 font-bold">Rp</span>
+                        <input
+                          type="number"
+                          placeholder="25000"
+                          className="w-full pl-11 pr-3 py-3 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl
+                                     focus:border-primary/50 focus:ring-2 focus:ring-primary/10
+                                     outline-none transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 font-medium"
+                          value={variant.price}
+                          onChange={(e) => {
+                            const updated = [...newItem.variants];
+                            updated[idx] = { ...updated[idx], price: e.target.value };
+                            setNewItem({ ...newItem, variants: updated });
+                          }}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = newItem.variants.filter((_, i) => i !== idx);
+                          setNewItem({
+                            ...newItem,
+                            variants: updated.length ? updated : [{ label: "", price: "" }],
+                          });
+                        }}
+                        className="px-3 py-3 bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400 hover:border-red-100 dark:hover:border-red-500/20 transition-all text-sm font-bold shrink-0"
+                        aria-label="Hapus varian"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setNewItem({
+                      ...newItem,
+                      variants: [...newItem.variants, { label: "", price: "" }],
+                    })
+                  }
+                  className="mt-2 text-xs font-bold text-primary hover:underline"
+                >
+                  + Tambah Varian
+                </button>
+              </div>
+            )}
+
             {/* Description */}
             <div>
               <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
@@ -573,7 +692,7 @@ export default function MenuManager() {
                   setShowNewCategoryInput(false);
                   setIsCategoryDropdownOpen(false);
                   setEditingItem(null);
-                  setNewItem({ name: "", price: "", category: "", description: "", image: "", isNew: false });
+                  setNewItem(createEmptyItem());
                 }}
                 className="px-5 py-3 text-sm font-semibold rounded-xl
                            border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400
@@ -662,9 +781,22 @@ export default function MenuManager() {
                       {item.category}
                     </p>
                   )}
-                  <span className="block text-xs font-bold text-primary mt-1">
-                    Rp {item.price.toLocaleString("id-ID")}
-                  </span>
+                  {(() => {
+                    const itemVariants = getItemVariants(item);
+                    if (itemVariants.length > 0) {
+                      const range = getVariantPriceRange(itemVariants);
+                      return (
+                        <span className="block text-xs font-bold text-primary mt-1">
+                          Mulai Rp {range.min.toLocaleString("id-ID")} · {itemVariants.length} varian
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="block text-xs font-bold text-primary mt-1">
+                        Rp {Number(item.price || 0).toLocaleString("id-ID")}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 {/* Actions */}
@@ -690,13 +822,19 @@ export default function MenuManager() {
                         !availableCategories.includes(item.category) && item.category !== "",
                       );
                       setEditingItem(item);
+                      const itemVariants = getItemVariants(item);
+                      const editingHasVariants = itemVariants.length > 0;
                       setNewItem({
                         name: item.name,
-                        price: item.price,
+                        price: editingHasVariants ? "" : item.price ?? "",
                         category: item.category,
                         description: item.description || "",
                         image: item.image || "",
                         isNew: !!item.isNew,
+                        hasVariants: editingHasVariants,
+                        variants: editingHasVariants
+                          ? itemVariants.map((v) => ({ label: v.label, price: v.price }))
+                          : [{ label: "", price: "" }, { label: "", price: "" }],
                       });
                     }}
                     className="h-8 px-2.5 text-[11px] font-bold text-blue-500 dark:text-blue-400 rounded-lg
@@ -800,15 +938,31 @@ export default function MenuManager() {
               <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight">{selectedItem.name}</h3>
 
               <div className="flex items-center gap-2 mt-2">
-                <span className="text-base font-bold text-primary">
-                  Rp {selectedItem.price.toLocaleString("id-ID")}
-                </span>
+                {getItemVariants(selectedItem).length === 0 && (
+                  <span className="text-base font-bold text-primary">
+                    Rp {Number(selectedItem.price || 0).toLocaleString("id-ID")}
+                  </span>
+                )}
                 {selectedItem.category && (
                   <span className="text-[11px] bg-gray-100 dark:bg-white/10 px-2.5 py-1 rounded-full text-gray-500 dark:text-gray-400 font-medium">
                     {selectedItem.category}
                   </span>
                 )}
               </div>
+
+              {getItemVariants(selectedItem).length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {getItemVariants(selectedItem).map((v, i) => (
+                    <span
+                      key={`${v.label}-${i}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-700 bg-gray-50 border border-gray-100 px-2.5 py-1.5 rounded-lg"
+                    >
+                      {v.label}
+                      <span className="text-primary">Rp {Number(v.price).toLocaleString("id-ID")}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {selectedItem.description && (
                 <p className="mt-3 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">

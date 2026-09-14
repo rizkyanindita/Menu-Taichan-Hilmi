@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { highlightParts } from '@/lib/menuSearch';
 import { menuImageSrc } from '@/lib/driveImage';
+import { getItemVariants, getVariantPriceRange } from '@/lib/variants';
 
 // Descriptions tend to lead with repeated boilerplate ("Disajikan dengan...")
 // and bury the actual differentiator in a trailing "(...)" — surface that first.
@@ -95,6 +96,22 @@ export default function MenuItem({ item, isGrid = true, searchTokens = [], prior
     const hasPrice = Number.isFinite(priceNumber) && priceNumber > 0;
     const hasImage = !imageError && item.image && String(item.image).trim() !== "";
     const { tag: descTag, main: descMain } = splitDescription(item.description);
+
+    // Produk dengan pilihan (mis. Frozen/Goreng): kartu menampilkan harga
+    // termurah ("Mulai Rp ..."), modal menampilkan harga varian yang dipilih.
+    const variants = getItemVariants(item);
+    const hasVariants = variants.length > 0;
+    const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
+    const priceRange = hasVariants ? getVariantPriceRange(variants) : null;
+    const selectedVariant = hasVariants ? (variants[selectedVariantIndex] || variants[0]) : null;
+
+    const cardPriceNumber = hasVariants ? priceRange.min : priceNumber;
+    const cardHasPrice = hasVariants ? priceRange.min != null : hasPrice;
+
+    const modalPriceNumber = hasVariants ? Number(selectedVariant.price) : priceNumber;
+    const modalHasPrice = hasVariants
+        ? Number.isFinite(modalPriceNumber) && modalPriceNumber > 0
+        : hasPrice;
 
     useEffect(() => { setMounted(true); }, []);
 
@@ -213,9 +230,9 @@ export default function MenuItem({ item, isGrid = true, searchTokens = [], prior
                                     <Highlight text={item.name} tokens={searchTokens} />
                                 </h2>
                                 <div className="flex flex-wrap items-center gap-2">
-                                    {hasPrice ? (
+                                    {modalHasPrice ? (
                                         <span className="inline-flex w-auto rounded-xl bg-orange-50 dark:bg-orange-500/10 px-3 py-1.5 text-sm font-bold text-orange-600 dark:text-orange-400">
-                                            Rp {priceNumber.toLocaleString("id-ID")}
+                                            Rp {modalPriceNumber.toLocaleString("id-ID")}
                                         </span>
                                     ) : (
                                         <span className="inline-flex w-auto rounded-xl bg-gray-100 dark:bg-white/10 px-3 py-1.5 text-sm font-bold text-gray-500 dark:text-gray-400">
@@ -234,6 +251,24 @@ export default function MenuItem({ item, isGrid = true, searchTokens = [], prior
                                         </span>
                                     )}
                                 </div>
+                                {hasVariants && (
+                                    <div className="flex flex-wrap gap-2" role="group" aria-label="Pilih varian">
+                                        {variants.map((v, i) => (
+                                            <button
+                                                key={`${v.label}-${i}`}
+                                                type="button"
+                                                onClick={() => setSelectedVariantIndex(i)}
+                                                className={`px-3 py-1.5 rounded-xl text-sm font-bold border transition-all active:scale-95
+                                                    ${i === selectedVariantIndex
+                                                        ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-gray-900 dark:border-white'
+                                                        : 'bg-white dark:bg-white/5 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-white/10 hover:border-gray-400 dark:hover:border-white/30'
+                                                    }`}
+                                            >
+                                                {v.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Divider */}
@@ -337,11 +372,14 @@ export default function MenuItem({ item, isGrid = true, searchTokens = [], prior
                         </div>
 
                         <div className="flex flex-col gap-2.5">
-                            {hasPrice ? (
+                            {cardHasPrice ? (
                                 <div className="flex items-baseline gap-0.5">
+                                    {hasVariants && (
+                                        <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 mr-0.5">Mulai</span>
+                                    )}
                                     <span className="text-[11px] font-bold text-gray-800 dark:text-gray-300">Rp</span>
                                     <span className="text-[14px] sm:text-[15px] font-black text-gray-900 dark:text-gray-100 tracking-tight">
-                                        {priceNumber.toLocaleString("id-ID")}
+                                        {cardPriceNumber.toLocaleString("id-ID")}
                                     </span>
                                     {unit && (
                                         <span className="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold ml-1">/{unit}</span>
@@ -431,11 +469,14 @@ export default function MenuItem({ item, isGrid = true, searchTokens = [], prior
                             )}
                         </div>
                         <div className="flex items-center justify-between mt-2.5">
-                            {hasPrice ? (
+                            {cardHasPrice ? (
                                 <div className="flex items-baseline gap-0.5">
+                                    {hasVariants && (
+                                        <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 mr-0.5">Mulai</span>
+                                    )}
                                     <span className="text-[11px] font-bold text-gray-900 dark:text-gray-300">Rp</span>
                                     <span className="text-[16px] font-black text-gray-900 dark:text-gray-100 tracking-tight">
-                                        {priceNumber.toLocaleString("id-ID")}
+                                        {cardPriceNumber.toLocaleString("id-ID")}
                                     </span>
                                     {unit && (
                                         <span className="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold ml-1">/{unit}</span>
