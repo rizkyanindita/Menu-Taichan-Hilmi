@@ -20,12 +20,12 @@ export default function MenuManager() {
 
   if (isMenuManagerDisabled) {
     return (
-      <div className="relative overflow-hidden rounded-3xl border border-gray-100/80 bg-white/80 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.06)] p-12 text-center flex flex-col items-center justify-center">
-        <div className="w-20 h-20 bg-gray-50 rounded-3xl flex items-center justify-center text-4xl mb-5 shadow-sm border border-gray-100">
+      <div className="relative overflow-hidden rounded-3xl border border-gray-100/80 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.06)] p-12 text-center flex flex-col items-center justify-center">
+        <div className="w-20 h-20 bg-gray-50 dark:bg-white/5 rounded-3xl flex items-center justify-center text-4xl mb-5 shadow-sm border border-gray-100 dark:border-white/10">
           🔒
         </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Fitur Terkunci</h3>
-        <p className="text-sm text-gray-500 max-w-xs mx-auto leading-relaxed">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Fitur Terkunci</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto leading-relaxed">
           Hubungi admin jika Anda ingin menggunakan fitur Manajemen Menu.
         </p>
       </div>
@@ -44,6 +44,8 @@ export default function MenuManager() {
   const [cloneData, setCloneData] = useState({ newId: "", newName: "" });
   const [userRole, setUserRole] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("Semua");
+  const [currentPage, setCurrentPage] = useState(1);
   const availableCategories = Array.from(
     new Set(items.map((item) => item.category).filter(Boolean)),
   );
@@ -234,36 +236,65 @@ export default function MenuManager() {
     }
   };
 
+  const PAGE_SIZE = 6;
+
+  // Tab kategori: "Semua" + tiap kategori yang benar-benar dipakai, masing-masing
+  // dengan jumlah item-nya, supaya list panjang kebagi per jenis produk.
+  const categoryTabs = [
+    { label: "Semua", count: items.length },
+    ...availableCategories.map((cat) => ({
+      label: cat,
+      count: items.filter((item) => item.category === cat).length,
+    })),
+  ];
+
+  const handleSelectCategory = (cat) => {
+    setSelectedCategory(cat);
+    setCurrentPage(1);
+  };
+
+  const categoryFilteredItems =
+    selectedCategory === "Semua"
+      ? items
+      : items.filter((item) => item.category === selectedCategory);
+
   // Filter items by search
-  const filteredItems = items.filter((item) =>
+  const filteredItems = categoryFilteredItems.filter((item) =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (item.category && item.category.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  // Pagination hanya relevan kalau kategori/pencarian yang aktif masih
+  // menyisakan lebih dari satu halaman — kategori kecil tidak perlu halaman.
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const pageStart = (safePage - 1) * PAGE_SIZE;
+  const pagedItems = filteredItems.slice(pageStart, pageStart + PAGE_SIZE);
+
   if (loading) {
     return (
-      <div className="relative overflow-hidden rounded-3xl border border-gray-100 bg-white/80 backdrop-blur-xl p-8 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
+      <div className="relative overflow-hidden rounded-3xl border border-gray-100 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl p-8 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
         <div className="flex items-center justify-center gap-3">
           <div className="w-8 h-8 border-[3px] border-primary border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-gray-500 font-medium text-sm">Memuat menu...</span>
+          <span className="text-gray-500 dark:text-gray-400 font-medium text-sm">Memuat menu...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-gray-100/80 bg-white/80 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
+    <div className="relative overflow-hidden rounded-3xl border border-gray-100/80 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
 
       {/* ═══════════ HEADER ═══════════ */}
-      <div className="p-5 sm:p-6 border-b border-gray-100/80">
+      <div className="p-5 sm:p-6 border-b border-gray-100/80 dark:border-white/10">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-orange-100">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-orange-100 dark:to-orange-500/10">
               <span className="text-xl">🍽️</span>
             </div>
             <div>
-              <h2 className="text-base font-bold text-gray-900 leading-tight">Menu Management</h2>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <h2 className="text-base font-bold text-gray-900 dark:text-gray-100 leading-tight">Menu Management</h2>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                 {items.length} item{items.length !== 1 ? "s" : ""} · {CAFE_NAME}
               </p>
             </div>
@@ -285,9 +316,9 @@ export default function MenuManager() {
               text-sm font-semibold rounded-xl
               transition-all duration-200 active:scale-[0.97]
               ${userRole === "staff"
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                ? "bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-600 cursor-not-allowed"
                 : isAdding
-                  ? "bg-gray-900 text-white hover:bg-gray-800 shadow-lg"
+                  ? "bg-gray-900 dark:bg-white dark:text-gray-900 text-white hover:bg-gray-800 dark:hover:bg-gray-200 shadow-lg"
                   : "bg-gradient-to-r from-primary to-orange-500 text-white hover:shadow-xl hover:shadow-primary/20 shadow-lg"
               }
             `}
@@ -296,18 +327,41 @@ export default function MenuManager() {
           </button>
         </div>
 
-        {/* Search Bar */}
+        {/* Tab Kategori */}
         {!isAdding && items.length > 0 && (
-          <div className="mt-4 relative">
+          <div className="mt-4 flex flex-wrap gap-2">
+            {categoryTabs.map((cat) => (
+              <button
+                key={cat.label}
+                type="button"
+                onClick={() => handleSelectCategory(cat.label)}
+                className={`inline-flex items-center px-3.5 py-2 rounded-full text-xs font-bold border transition-all duration-200
+                  ${selectedCategory === cat.label
+                    ? "bg-gradient-to-r from-primary to-orange-500 text-white border-transparent shadow-md shadow-primary/20"
+                    : "bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-white/10 hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+                  }`}
+              >
+                {cat.label} ({cat.count})
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Search */}
+        {!isAdding && items.length > 0 && (
+          <div className="mt-3 relative">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">🔍</span>
             <input
               type="text"
               placeholder="Cari menu..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 text-sm text-gray-700 bg-gray-50/80 border border-gray-200/80 rounded-xl
-                         focus:bg-white focus:border-primary/40 focus:ring-2 focus:ring-primary/10
-                         outline-none transition-all duration-200 placeholder:text-gray-400"
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full pl-10 pr-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 bg-gray-50/80 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 rounded-xl
+                         focus:bg-white dark:focus:bg-white/10 focus:border-primary/40 focus:ring-2 focus:ring-primary/10
+                         outline-none transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
           </div>
         )}
@@ -315,27 +369,27 @@ export default function MenuManager() {
 
       {/* ═══════════ ADD / EDIT FORM ═══════════ */}
       {isAdding && (
-        <div className="p-5 sm:p-6 border-b border-gray-100/80 bg-gradient-to-br from-blue-50/50 to-indigo-50/30">
+        <div className="p-5 sm:p-6 border-b border-gray-100/80 dark:border-white/10 bg-gradient-to-br from-blue-50/50 to-indigo-50/30 dark:from-blue-500/[0.06] dark:to-indigo-500/[0.04]">
           <form onSubmit={handleSubmitItem} className="space-y-4">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-sm">{editingItem ? "✏️" : "📝"}</span>
-              <h3 className="text-sm font-bold text-gray-800">
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">
                 {editingItem ? "Edit Menu" : "Tambah Menu Baru"}
               </h3>
             </div>
 
             {/* Name */}
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                 Nama Item <span className="text-red-400">*</span>
               </label>
               <input
                 required
                 type="text"
                 placeholder="Contoh: Cappuccino, Nasi Goreng"
-                className="w-full px-4 py-3 text-sm text-gray-900 bg-white border border-gray-200 rounded-xl
+                className="w-full px-4 py-3 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl
                            focus:border-primary/50 focus:ring-2 focus:ring-primary/10
-                           outline-none transition-all duration-200 placeholder:text-gray-400 font-medium"
+                           outline-none transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 font-medium"
                 value={newItem.name}
                 onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
               />
@@ -344,25 +398,25 @@ export default function MenuManager() {
             {/* Price + Category */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                   Harga <span className="text-red-400">*</span>
                 </label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-bold">Rp</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-gray-500 font-bold">Rp</span>
                   <input
                     required
                     type="number"
                     placeholder="25000"
-                    className="w-full pl-11 pr-4 py-3 text-sm text-gray-900 bg-white border border-gray-200 rounded-xl
+                    className="w-full pl-11 pr-4 py-3 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl
                                focus:border-primary/50 focus:ring-2 focus:ring-primary/10
-                               outline-none transition-all duration-200 placeholder:text-gray-400 font-medium"
+                               outline-none transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 font-medium"
                     value={newItem.price}
                     onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                   Kategori <span className="text-red-400">*</span>
                 </label>
                 {showNewCategoryInput ? (
@@ -371,9 +425,9 @@ export default function MenuManager() {
                       required={showNewCategoryInput}
                       type="text"
                       placeholder="Nama kategori baru"
-                      className="flex-1 px-4 py-3 text-sm text-gray-900 bg-white border border-gray-200 rounded-xl
+                      className="flex-1 px-4 py-3 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl
                                  focus:border-primary/50 focus:ring-2 focus:ring-primary/10
-                                 outline-none transition-all duration-200 placeholder:text-gray-400 font-medium"
+                                 outline-none transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 font-medium"
                       value={newItem.category}
                       onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
                       autoFocus
@@ -384,7 +438,7 @@ export default function MenuManager() {
                         setShowNewCategoryInput(false);
                         setNewItem({ ...newItem, category: availableCategories[0] || "" });
                       }}
-                      className="px-3 py-3 bg-gray-100 text-gray-500 rounded-xl border border-gray-200 hover:bg-gray-200 transition-all text-sm font-bold"
+                      className="px-3 py-3 bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-200 dark:hover:bg-white/10 transition-all text-sm font-bold"
                     >
                       ✕
                     </button>
@@ -401,15 +455,15 @@ export default function MenuManager() {
                     />
                     <div
                       onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-                      className={`w-full px-4 py-3 bg-white border rounded-xl
+                      className={`w-full px-4 py-3 bg-white dark:bg-white/5 border rounded-xl
                                  transition-all duration-200 font-medium text-sm flex justify-between items-center cursor-pointer
-                                 ${isCategoryDropdownOpen ? "border-primary/50 ring-2 ring-primary/10" : "border-gray-200 hover:border-gray-300"}`}
+                                 ${isCategoryDropdownOpen ? "border-primary/50 ring-2 ring-primary/10" : "border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20"}`}
                     >
-                      <span className={`block truncate pr-4 ${newItem.category ? "text-gray-900" : "text-gray-400"}`}>
+                      <span className={`block truncate pr-4 ${newItem.category ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500"}`}>
                         {newItem.category || "Pilih Kategori"}
                       </span>
                       <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 292.4 292.4"
-                        className={`flex-shrink-0 text-gray-400 transition-transform duration-200 ${isCategoryDropdownOpen ? "rotate-180" : ""}`}>
+                        className={`flex-shrink-0 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${isCategoryDropdownOpen ? "rotate-180" : ""}`}>
                         <path d="M287 69.4a17.6 17.6 0 0 0-13-5.4H18.4c-5 0-9.3 1.8-12.9 5.4A17.6 17.6 0 0 0 0 82.2c0 5 1.8 9.3 5.4 12.9l128 127.9c3.6 3.6 7.8 5.4 12.8 5.4s9.2-1.8 12.8-5.4L287 95c3.5-3.5 5.4-7.8 5.4-12.8 0-5-1.9-9.2-5.5-12.8z" />
                       </svg>
                     </div>
@@ -417,7 +471,7 @@ export default function MenuManager() {
                     {isCategoryDropdownOpen && (
                       <>
                         <div className="fixed inset-0 z-10" onClick={() => setIsCategoryDropdownOpen(false)} />
-                        <div className="absolute z-20 w-full mt-1.5 bg-white border border-gray-100 rounded-xl shadow-2xl max-h-52 overflow-y-auto">
+                        <div className="absolute z-20 w-full mt-1.5 bg-white dark:bg-[#1c1c1c] border border-gray-100 dark:border-white/10 rounded-xl shadow-2xl max-h-52 overflow-y-auto">
                           {availableCategories.map((cat) => (
                             <div
                               key={cat}
@@ -425,7 +479,7 @@ export default function MenuManager() {
                                 setNewItem({ ...newItem, category: cat });
                                 setIsCategoryDropdownOpen(false);
                               }}
-                              className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-sm text-gray-700 font-medium transition-colors border-b border-gray-50/80 last:border-0 truncate"
+                              className="px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer text-sm text-gray-700 dark:text-gray-300 font-medium transition-colors border-b border-gray-50/80 dark:border-white/5 last:border-0 truncate"
                               title={cat}
                             >
                               {cat}
@@ -437,7 +491,7 @@ export default function MenuManager() {
                               setNewItem({ ...newItem, category: "" });
                               setIsCategoryDropdownOpen(false);
                             }}
-                            className="px-4 py-2.5 bg-blue-50/80 hover:bg-blue-100/80 cursor-pointer text-sm text-blue-600 font-bold transition-colors sticky bottom-0 border-t border-blue-100/60"
+                            className="px-4 py-2.5 bg-blue-50/80 dark:bg-blue-500/10 hover:bg-blue-100/80 dark:hover:bg-blue-500/20 cursor-pointer text-sm text-blue-600 dark:text-blue-400 font-bold transition-colors sticky bottom-0 border-t border-blue-100/60 dark:border-blue-500/20"
                           >
                             + Tambah Kategori Baru
                           </div>
@@ -451,15 +505,15 @@ export default function MenuManager() {
 
             {/* Description */}
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                 Deskripsi
               </label>
               <textarea
                 rows="2"
                 placeholder="Deskripsikan menu Anda..."
-                className="w-full px-4 py-3 text-sm text-gray-900 bg-white border border-gray-200 rounded-xl
+                className="w-full px-4 py-3 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl
                            focus:border-primary/50 focus:ring-2 focus:ring-primary/10
-                           outline-none transition-all duration-200 placeholder:text-gray-400 font-medium resize-none"
+                           outline-none transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 font-medium resize-none"
                 value={newItem.description}
                 onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
               />
@@ -467,15 +521,15 @@ export default function MenuManager() {
 
             {/* Image URL */}
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                 URL Gambar
               </label>
               <input
                 type="text"
                 placeholder="https://example.com/image.jpg"
-                className="w-full px-4 py-3 text-sm text-gray-900 bg-white border border-gray-200 rounded-xl
+                className="w-full px-4 py-3 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl
                            focus:border-primary/50 focus:ring-2 focus:ring-primary/10
-                           outline-none transition-all duration-200 placeholder:text-gray-400 font-medium"
+                           outline-none transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 font-medium"
                 value={newItem.image}
                 onChange={(e) => setNewItem({ ...newItem, image: driveImageUrl(e.target.value, 1000) })}
               />
@@ -484,7 +538,7 @@ export default function MenuManager() {
             {/* Tandai menu baru — dipakai untuk badge "Baru" & filter di halaman
                 pelanggan. Sengaja manual (bukan otomatis dari tanggal dibuat)
                 supaya kamu yang menentukan kapan sorotannya dilepas. */}
-            <label className="flex items-center gap-3 p-3.5 rounded-xl border border-gray-200 bg-white cursor-pointer hover:border-primary/40 transition-colors">
+            <label className="flex items-center gap-3 p-3.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 cursor-pointer hover:border-primary/40 transition-colors">
               <input
                 type="checkbox"
                 checked={!!newItem.isNew}
@@ -492,8 +546,8 @@ export default function MenuManager() {
                 className="w-4 h-4 accent-primary cursor-pointer"
               />
               <span className="flex-1">
-                <span className="block text-sm font-bold text-gray-900">Tandai sebagai menu baru</span>
-                <span className="block text-xs text-gray-400 mt-0.5">
+                <span className="block text-sm font-bold text-gray-900 dark:text-gray-100">Tandai sebagai menu baru</span>
+                <span className="block text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                   Muncul badge &ldquo;Baru&rdquo; di kartu menu dan chip filter khusus
                 </span>
               </span>
@@ -521,8 +575,8 @@ export default function MenuManager() {
                   setNewItem({ name: "", price: "", category: "", description: "", image: "", isNew: false });
                 }}
                 className="px-5 py-3 text-sm font-semibold rounded-xl
-                           border border-gray-200 text-gray-500
-                           hover:bg-gray-50 transition-all"
+                           border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400
+                           hover:bg-gray-50 dark:hover:bg-white/5 transition-all"
               >
                 Batal
               </button>
@@ -535,32 +589,42 @@ export default function MenuManager() {
       <div className="p-5 sm:p-6">
         {items.length === 0 ? (
           <div className="text-center py-16">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-50 mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-50 dark:bg-white/5 mb-4">
               <span className="text-3xl">🍽️</span>
             </div>
-            <p className="text-sm font-semibold text-gray-400">Belum ada menu</p>
-            <p className="text-xs text-gray-400 mt-1">Tambahkan item pertama Anda!</p>
+            <p className="text-sm font-semibold text-gray-400 dark:text-gray-500">Belum ada menu</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Tambahkan item pertama Anda!</p>
           </div>
         ) : (
-          <div className="space-y-2.5">
-            {filteredItems.length === 0 && searchQuery && (
+          <>
+            <p className="text-xs text-gray-400 dark:text-gray-500 font-medium mb-3">
+              {filteredItems.length === 0
+                ? "Tidak ada menu yang cocok"
+                : `Menampilkan ${pageStart + 1}-${Math.min(pageStart + PAGE_SIZE, filteredItems.length)} dari ${filteredItems.length} item${selectedCategory !== "Semua" ? ` di kategori ${selectedCategory}` : ""}`}
+            </p>
+            <div className="space-y-2.5">
+            {filteredItems.length === 0 && (
               <div className="text-center py-10">
-                <p className="text-sm text-gray-400">Tidak ada menu yang cocok dengan &ldquo;{searchQuery}&rdquo;</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">
+                  {searchQuery
+                    ? <>Tidak ada menu yang cocok dengan &ldquo;{searchQuery}&rdquo;</>
+                    : "Tidak ada menu di kategori ini"}
+                </p>
               </div>
             )}
-            {filteredItems.map((item) => (
+            {pagedItems.map((item) => (
               <div
                 key={item.id}
                 onClick={() => setSelectedItem(item)}
                 className={`group flex items-center gap-3.5 p-3.5 rounded-2xl border cursor-pointer
                             transition-all duration-200
                             ${item.isSoldOut
-                              ? "bg-gray-50/60 border-gray-100 opacity-60"
-                              : "bg-white/60 border-gray-100/80 hover:border-primary/20 hover:shadow-md hover:shadow-primary/5"
+                              ? "bg-gray-50/60 dark:bg-white/[0.02] border-gray-100 dark:border-white/5 opacity-60"
+                              : "bg-white/60 dark:bg-white/[0.03] border-gray-100/80 dark:border-white/10 hover:border-primary/20 hover:shadow-md hover:shadow-primary/5"
                             }`}
               >
                 {/* Image */}
-                <div className="w-14 h-14 rounded-xl overflow-hidden relative flex-shrink-0 bg-gray-100 ring-1 ring-gray-200/60 group-hover:ring-primary/20 transition-all">
+                <div className="w-14 h-14 rounded-xl overflow-hidden relative flex-shrink-0 bg-gray-100 dark:bg-white/5 ring-1 ring-gray-200/60 dark:ring-white/10 group-hover:ring-primary/20 transition-all">
                   {item.image && !imageErrors[item.id] && (item.image.startsWith("/") || item.image.startsWith("http")) ? (
                     <Image
                       src={driveImageUrl(item.image, 180)}
@@ -571,7 +635,7 @@ export default function MenuManager() {
                       onError={() => handleImageError(item.id)}
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-gray-100 dark:bg-white/5 flex items-center justify-center">
                       <span className="text-lg opacity-40">🖼️</span>
                     </div>
                   )}
@@ -579,7 +643,7 @@ export default function MenuManager() {
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-gray-900 truncate leading-tight" title={item.name}>
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate leading-tight" title={item.name}>
                     {item.name}
                     {item.isNew && !item.isSoldOut && (
                       <span className="ml-1.5 text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md align-middle">
@@ -597,7 +661,7 @@ export default function MenuManager() {
                       Rp {item.price.toLocaleString("id-ID")}
                     </span>
                     {item.category && (
-                      <span className="text-[10px] text-gray-400 bg-gray-100/80 px-2 py-0.5 rounded-full truncate max-w-[100px] font-medium" title={item.category}>
+                      <span className="text-[10px] text-gray-400 dark:text-gray-500 bg-gray-100/80 dark:bg-white/5 px-2 py-0.5 rounded-full truncate max-w-[100px] font-medium" title={item.category}>
                         {item.category}
                       </span>
                     )}
@@ -611,8 +675,8 @@ export default function MenuManager() {
                     onClick={() => handleToggleStock(item)}
                     className={`h-8 px-2.5 text-[11px] font-bold rounded-lg transition-all duration-200 border
                       ${item.isSoldOut
-                        ? "bg-red-50 text-red-500 border-red-100 hover:bg-red-100"
-                        : "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100"
+                        ? "bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400 border-red-100 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20"
+                        : "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20 hover:bg-emerald-100 dark:hover:bg-emerald-500/20"
                       }`}
                     title={item.isSoldOut ? "Klik untuk set Tersedia" : "Klik untuk set Habis"}
                   >
@@ -636,8 +700,8 @@ export default function MenuManager() {
                         isNew: !!item.isNew,
                       });
                     }}
-                    className="h-8 px-2.5 text-[11px] font-bold text-blue-500 rounded-lg
-                               border border-blue-100 hover:bg-blue-50 transition-all"
+                    className="h-8 px-2.5 text-[11px] font-bold text-blue-500 dark:text-blue-400 rounded-lg
+                               border border-blue-100 dark:border-blue-500/20 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all"
                   >
                     ✏️
                   </button>
@@ -648,8 +712,8 @@ export default function MenuManager() {
                     disabled={userRole === "staff"}
                     className={`h-8 px-2.5 text-[11px] rounded-lg border transition-all
                       ${userRole === "staff"
-                        ? "opacity-30 cursor-not-allowed border-transparent text-gray-400"
-                        : "text-gray-400 border-transparent hover:border-red-100 hover:bg-red-50 hover:text-red-500"
+                        ? "opacity-30 cursor-not-allowed border-transparent text-gray-400 dark:text-gray-600"
+                        : "text-gray-400 dark:text-gray-500 border-transparent hover:border-red-100 dark:hover:border-red-500/20 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400"
                       }`}
                     title="Hapus"
                   >
@@ -658,7 +722,50 @@ export default function MenuManager() {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-5 pt-4 border-t border-gray-100/80 dark:border-white/10 flex items-center justify-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(Math.max(1, safePage - 1))}
+                  disabled={safePage === 1}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-white/5 hover:border-gray-300 dark:hover:border-white/20 transition-all"
+                  aria-label="Sebelumnya"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 292.4 292.4" className="rotate-90">
+                    <path d="M287 69.4a17.6 17.6 0 0 0-13-5.4H18.4c-5 0-9.3 1.8-12.9 5.4A17.6 17.6 0 0 0 0 82.2c0 5 1.8 9.3 5.4 12.9l128 127.9c3.6 3.6 7.8 5.4 12.8 5.4s9.2-1.8 12.8-5.4L287 95c3.5-3.5 5.4-7.8 5.4-12.8 0-5-1.9-9.2-5.5-12.8z" />
+                  </svg>
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setCurrentPage(p)}
+                    className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold border transition-all
+                      ${p === safePage
+                        ? "bg-gray-900 dark:bg-white dark:text-gray-900 text-white border-gray-900 dark:border-white"
+                        : "bg-white dark:bg-white/5 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-300 dark:hover:border-white/20"
+                      }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(Math.min(totalPages, safePage + 1))}
+                  disabled={safePage === totalPages}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-white/5 hover:border-gray-300 dark:hover:border-white/20 transition-all"
+                  aria-label="Berikutnya"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 292.4 292.4" className="-rotate-90">
+                    <path d="M287 69.4a17.6 17.6 0 0 0-13-5.4H18.4c-5 0-9.3 1.8-12.9 5.4A17.6 17.6 0 0 0 0 82.2c0 5 1.8 9.3 5.4 12.9l128 127.9c3.6 3.6 7.8 5.4 12.8 5.4s9.2-1.8 12.8-5.4L287 95c3.5-3.5 5.4-7.8 5.4-12.8 0-5-1.9-9.2-5.5-12.8z" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -669,21 +776,21 @@ export default function MenuManager() {
           onClick={() => setSelectedItem(null)}
         >
           <div
-            className="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl relative"
+            className="bg-white dark:bg-[#141414] rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl relative"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close */}
             <button
               onClick={() => setSelectedItem(null)}
               className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full
-                         bg-white/90 backdrop-blur text-gray-600 border border-gray-200/60
-                         shadow-md hover:bg-gray-100 active:scale-95 transition-all text-sm"
+                         bg-white/90 dark:bg-black/50 backdrop-blur text-gray-600 dark:text-gray-300 border border-gray-200/60 dark:border-white/10
+                         shadow-md hover:bg-gray-100 dark:hover:bg-black/70 active:scale-95 transition-all text-sm"
             >
               ✕
             </button>
 
             {/* Image */}
-            <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-50 relative overflow-hidden">
+            <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-white/10 dark:to-white/5 relative overflow-hidden">
               {selectedItem.image && !imageErrors[selectedItem.id] && (selectedItem.image.startsWith("/") || selectedItem.image.startsWith("http")) ? (
                 <Image
                   src={driveImageUrl(selectedItem.image, 800)}
@@ -701,28 +808,28 @@ export default function MenuManager() {
 
             {/* Content */}
             <div className="p-5">
-              <h3 className="text-lg font-bold text-gray-900 leading-tight">{selectedItem.name}</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight">{selectedItem.name}</h3>
 
               <div className="flex items-center gap-2 mt-2">
                 <span className="text-base font-bold text-primary">
                   Rp {selectedItem.price.toLocaleString("id-ID")}
                 </span>
                 {selectedItem.category && (
-                  <span className="text-[11px] bg-gray-100 px-2.5 py-1 rounded-full text-gray-500 font-medium">
+                  <span className="text-[11px] bg-gray-100 dark:bg-white/10 px-2.5 py-1 rounded-full text-gray-500 dark:text-gray-400 font-medium">
                     {selectedItem.category}
                   </span>
                 )}
               </div>
 
               {selectedItem.description && (
-                <p className="mt-3 text-sm text-gray-500 leading-relaxed">
+                <p className="mt-3 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
                   {selectedItem.description}
                 </p>
               )}
 
               <button
                 onClick={() => setSelectedItem(null)}
-                className="w-full mt-5 py-2.5 text-sm font-semibold rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all"
+                className="w-full mt-5 py-2.5 text-sm font-semibold rounded-xl bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20 transition-all"
               >
                 Tutup
               </button>

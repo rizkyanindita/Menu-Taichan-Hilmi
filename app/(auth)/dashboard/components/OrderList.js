@@ -33,7 +33,7 @@ const MOCK_ORDERS = [
 
 export default function OrderList() {
     return (
-        <div className="relative overflow-hidden rounded-3xl border border-gray-100 bg-white/80 backdrop-blur-xl p-5 sm:p-6 shadow-[0_10px_30px_rgba(0,0,0,0.06)] flex flex-col gap-5">
+        <div className="relative overflow-hidden rounded-3xl border border-gray-100 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl p-5 sm:p-6 shadow-[0_10px_30px_rgba(0,0,0,0.06)] flex flex-col gap-5">
 
             {/* ── Header ── */}
             <div className="flex items-center justify-between">
@@ -42,19 +42,19 @@ export default function OrderList() {
                         <ClipboardList className="h-5 w-5 text-blue-500" />
                     </div>
                     <div>
-                        <h2 className="text-base font-bold text-gray-900 leading-tight">Recent Orders</h2>
-                        <p className="text-xs text-gray-400">Order management</p>
+                        <h2 className="text-base font-bold text-gray-900 dark:text-gray-100 leading-tight">Recent Orders</h2>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">Order management</p>
                     </div>
                 </div>
             </div>
 
             {/* ── Disabled Content ── */}
             <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100">
-                    <ClipboardList className="h-6 w-6 text-gray-300" />
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 dark:bg-white/5">
+                    <ClipboardList className="h-6 w-6 text-gray-300 dark:text-gray-600" />
                 </div>
-                <p className="text-sm font-semibold text-gray-400">Fitur Belum Aktif</p>
-                <p className="text-xs text-gray-400 max-w-[220px]">
+                <p className="text-sm font-semibold text-gray-400 dark:text-gray-500">Fitur Belum Aktif</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 max-w-[220px]">
                     🔒 Jika mau fitur ini bisa chat admin.
                 </p>
             </div>

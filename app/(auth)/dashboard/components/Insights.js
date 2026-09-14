@@ -7,8 +7,8 @@ export default function Insights() {
       <section
         className="
                 relative overflow-hidden
-                rounded-3xl border border-gray-100
-                bg-white/80 backdrop-blur-xl
+                rounded-3xl border border-gray-100 dark:border-white/10
+                bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl
                 p-4 sm:p-6
                 shadow-[0_10px_30px_rgba(0,0,0,0.06)]
                 opacity-70 pointer-events-none select-none
@@ -16,10 +16,10 @@ export default function Insights() {
       >
         {/* Header */}
         <div className="mb-5 sm:mb-6 flex items-center justify-between">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
             Daily Insights
           </h2>
-          <span className="text-xs font-semibold text-gray-500">Today</span>
+          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Today</span>
         </div>
 
         {/* Metrics */}
@@ -28,8 +28,8 @@ export default function Insights() {
           <div
             className="
                         group relative overflow-hidden
-                        rounded-2xl border border-blue-100
-                        bg-gradient-to-br from-blue-50 to-blue-100/60
+                        rounded-2xl border border-blue-100 dark:border-blue-500/20
+                        bg-gradient-to-br from-blue-50 to-blue-100/60 dark:from-blue-500/10 dark:to-blue-500/5
                         p-4 sm:p-5
                     "
           >
@@ -37,14 +37,14 @@ export default function Insights() {
               <TrendingUp className="h-12 w-12 text-blue-500" />
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
                 <TrendingUp className="h-5 w-5" />
               </div>
-              <p className="text-xs sm:text-sm font-medium text-blue-700">
+              <p className="text-xs sm:text-sm font-medium text-blue-700 dark:text-blue-300">
                 Total Pendapatan
               </p>
             </div>
-            <p className="mt-3 text-xl sm:text-2xl font-bold text-blue-900">
+            <p className="mt-3 text-xl sm:text-2xl font-bold text-blue-900 dark:text-blue-200">
               Rp 100.000.000
             </p>
           </div>
@@ -53,8 +53,8 @@ export default function Insights() {
           <div
             className="
                         group relative overflow-hidden
-                        rounded-2xl border border-purple-100
-                        bg-gradient-to-br from-purple-50 to-purple-100/60
+                        rounded-2xl border border-purple-100 dark:border-purple-500/20
+                        bg-gradient-to-br from-purple-50 to-purple-100/60 dark:from-purple-500/10 dark:to-purple-500/5
                         p-4 sm:p-5
                     "
           >
@@ -62,14 +62,14 @@ export default function Insights() {
               <ShoppingBag className="h-12 w-12 text-purple-500" />
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
                 <ShoppingBag className="h-5 w-5" />
               </div>
-              <p className="text-xs sm:text-sm font-medium text-purple-700">
+              <p className="text-xs sm:text-sm font-medium text-purple-700 dark:text-purple-300">
                 Total Orders
               </p>
             </div>
-            <p className="mt-3 text-xl sm:text-2xl font-bold text-purple-900">
+            <p className="mt-3 text-xl sm:text-2xl font-bold text-purple-900 dark:text-purple-200">
               45
             </p>
           </div>
@@ -80,9 +80,9 @@ export default function Insights() {
           className="
                     mt-6 flex h-44 sm:h-52 lg:h-60
                     items-center justify-center rounded-2xl
-                    border border-dashed border-gray-200
-                    bg-gradient-to-br from-gray-50 to-gray-100/60
-                    text-sm sm:text-base text-gray-400
+                    border border-dashed border-gray-200 dark:border-white/10
+                    bg-gradient-to-br from-gray-50 to-gray-100/60 dark:from-white/[0.03] dark:to-white/[0.02]
+                    text-sm sm:text-base text-gray-400 dark:text-gray-500
                 "
         >
           Chart Visualization
@@ -96,7 +96,7 @@ export default function Insights() {
                 rounded-3xl
                 flex flex-col items-center justify-center
                 gap-3
-                bg-white/10
+                bg-white/10 dark:bg-black/20
                 cursor-not-allowed
             "
       >
@@ -112,7 +112,7 @@ export default function Insights() {
         </div>
 
         {/* Label */}
-        <p className="text-2xl sm:text-3xl font-black tracking-widest text-gray-700 uppercase">
+        <p className="text-2xl sm:text-3xl font-black tracking-widest text-gray-700 dark:text-gray-300 uppercase">
           Not Available
         </p>
 

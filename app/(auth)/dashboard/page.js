@@ -100,7 +100,7 @@ function DashboardContent() {
         return (
             <div className="space-y-8">
                 <div className="flex justify-between items-center">
-                    <h1 className="text-3xl font-bold text-gray-900">Owner Dashboard</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Owner Dashboard</h1>
                     {/* <button
                         onClick={handleLogout}
                         className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 text-sm font-bold rounded-xl transition-all border border-red-100"
@@ -125,8 +125,8 @@ function DashboardContent() {
             </div>
             
             {/* Added MenuManager to Staff View as requested */}
-            <div className="mt-8 pt-8 border-t-2 border-gray-100">
-                <h2 className="text-xl font-bold text-gray-900 mb-6 px-2">Menu Management</h2>
+            <div className="mt-8 pt-8 border-t-2 border-gray-100 dark:border-white/10">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6 px-2">Menu Management</h2>
                 <MenuManager />
             </div>
         </div>

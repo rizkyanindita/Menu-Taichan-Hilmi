@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
-export default function ThemeToggle() {
+// Dashboard punya nav bar sendiri yang sticky di top-0 z-50 — toggle
+// mengambang ini akan tumpang-tindih dan tertutup olehnya di sana, jadi
+// disembunyikan; dashboard memasang instance-nya sendiri lewat prop `inline`.
+export default function ThemeToggle({ inline = false }) {
+    const pathname = usePathname();
     const [isDark, setIsDark] = useState(false);
     const [mounted, setMounted] = useState(false);
 
@@ -10,6 +15,10 @@ export default function ThemeToggle() {
         setMounted(true);
         setIsDark(document.documentElement.classList.contains("dark"));
     }, []);
+
+    if (!inline && pathname?.startsWith("/dashboard")) {
+        return null;
+    }
 
     const toggle = () => {
         const next = !isDark;
