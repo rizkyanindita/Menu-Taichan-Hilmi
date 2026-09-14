@@ -283,10 +283,10 @@ export default function MenuManager() {
   }
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-gray-100/80 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
+    <div className="relative rounded-3xl border border-gray-100/80 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
 
       {/* ═══════════ HEADER ═══════════ */}
-      <div className="p-5 sm:p-6 border-b border-gray-100/80 dark:border-white/10">
+      <div className="p-5 sm:p-6 border-b border-gray-100/80 dark:border-white/10 rounded-t-3xl overflow-hidden">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-orange-100 dark:to-orange-500/10">
@@ -326,10 +326,14 @@ export default function MenuManager() {
             {isAdding ? "✕ Batal" : "+ Tambah Item"}
           </button>
         </div>
+      </div>
 
-        {/* Tab Kategori */}
-        {!isAdding && items.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
+      {/* ═══════════ TAB KATEGORI + SEARCH (sticky) ═══════════
+          Nempel di bawah nav dashboard (h-16 = 64px) saat di-scroll, supaya tidak
+          perlu scroll balik ke atas buat ganti kategori/cari di list yang panjang. */}
+      {!isAdding && items.length > 0 && (
+        <div className="sticky top-16 z-10 bg-white/95 dark:bg-[#141414]/95 backdrop-blur-sm px-5 sm:px-6 py-3.5 border-b border-gray-100/80 dark:border-white/10">
+          <div className="flex flex-wrap gap-2">
             {categoryTabs.map((cat) => (
               <button
                 key={cat.label}
@@ -345,10 +349,7 @@ export default function MenuManager() {
               </button>
             ))}
           </div>
-        )}
 
-        {/* Search */}
-        {!isAdding && items.length > 0 && (
           <div className="mt-3 relative">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">🔍</span>
             <input
@@ -364,8 +365,8 @@ export default function MenuManager() {
                          outline-none transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ═══════════ ADD / EDIT FORM ═══════════ */}
       {isAdding && (
@@ -656,16 +657,14 @@ export default function MenuManager() {
                       </span>
                     )}
                   </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs font-bold text-primary">
-                      Rp {item.price.toLocaleString("id-ID")}
-                    </span>
-                    {item.category && (
-                      <span className="text-[10px] text-gray-400 dark:text-gray-500 bg-gray-100/80 dark:bg-white/5 px-2 py-0.5 rounded-full truncate max-w-[100px] font-medium" title={item.category}>
-                        {item.category}
-                      </span>
-                    )}
-                  </div>
+                  {item.category && (
+                    <p className="text-[10.5px] text-gray-400 dark:text-gray-500 font-medium truncate mt-0.5" title={item.category}>
+                      {item.category}
+                    </p>
+                  )}
+                  <span className="block text-xs font-bold text-primary mt-1">
+                    Rp {item.price.toLocaleString("id-ID")}
+                  </span>
                 </div>
 
                 {/* Actions */}
@@ -724,43 +723,33 @@ export default function MenuManager() {
             ))}
             </div>
 
-            {/* Pagination */}
+            {/* Pagination — pola kompak "‹ Halaman X dari Y ›" supaya tetap muat
+                di layar sempit walau jumlah menu tumbuh jadi ratusan item. */}
             {totalPages > 1 && (
-              <div className="mt-5 pt-4 border-t border-gray-100/80 dark:border-white/10 flex items-center justify-center gap-1.5">
+              <div className="mt-5 pt-4 border-t border-gray-100/80 dark:border-white/10 flex items-center justify-center gap-4">
                 <button
                   type="button"
                   onClick={() => setCurrentPage(Math.max(1, safePage - 1))}
                   disabled={safePage === 1}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-white/5 hover:border-gray-300 dark:hover:border-white/20 transition-all"
-                  aria-label="Sebelumnya"
+                  className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-white/5 hover:border-gray-300 dark:hover:border-white/20 transition-all"
+                  aria-label="Halaman sebelumnya"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 292.4 292.4" className="rotate-90">
-                    <path d="M287 69.4a17.6 17.6 0 0 0-13-5.4H18.4c-5 0-9.3 1.8-12.9 5.4A17.6 17.6 0 0 0 0 82.2c0 5 1.8 9.3 5.4 12.9l128 127.9c3.6 3.6 7.8 5.4 12.8 5.4s9.2-1.8 12.8-5.4L287 95c3.5-3.5 5.4-7.8 5.4-12.8 0-5-1.9-9.2-5.5-12.8z" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m15 18-6-6 6-6" />
                   </svg>
                 </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => setCurrentPage(p)}
-                    className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold border transition-all
-                      ${p === safePage
-                        ? "bg-gray-900 dark:bg-white dark:text-gray-900 text-white border-gray-900 dark:border-white"
-                        : "bg-white dark:bg-white/5 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-300 dark:hover:border-white/20"
-                      }`}
-                  >
-                    {p}
-                  </button>
-                ))}
+                <span className="text-xs font-bold text-gray-600 dark:text-gray-300 min-w-[110px] text-center">
+                  Halaman {safePage} dari {totalPages}
+                </span>
                 <button
                   type="button"
                   onClick={() => setCurrentPage(Math.min(totalPages, safePage + 1))}
                   disabled={safePage === totalPages}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-white/5 hover:border-gray-300 dark:hover:border-white/20 transition-all"
-                  aria-label="Berikutnya"
+                  className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-white/5 hover:border-gray-300 dark:hover:border-white/20 transition-all"
+                  aria-label="Halaman berikutnya"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 292.4 292.4" className="-rotate-90">
-                    <path d="M287 69.4a17.6 17.6 0 0 0-13-5.4H18.4c-5 0-9.3 1.8-12.9 5.4A17.6 17.6 0 0 0 0 82.2c0 5 1.8 9.3 5.4 12.9l128 127.9c3.6 3.6 7.8 5.4 12.8 5.4s9.2-1.8 12.8-5.4L287 95c3.5-3.5 5.4-7.8 5.4-12.8 0-5-1.9-9.2-5.5-12.8z" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m9 18 6-6-6-6" />
                   </svg>
                 </button>
               </div>

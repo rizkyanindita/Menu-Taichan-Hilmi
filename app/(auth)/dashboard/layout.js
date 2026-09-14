@@ -41,23 +41,23 @@ export default function DashboardLayout({ children }) {
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30 dark:from-[#0a0a0a] dark:via-[#0a0a0a] dark:to-[#0a0a0a] flex flex-col">
             {/* Modern Navigation Bar - Only show if authorized */}
             {isAuthorized && (
-                <nav className="bg-white/95 dark:bg-[#141414]/95 backdrop-blur-sm border-b-2 border-gray-100 dark:border-white/10 px-6 py-4 sticky top-0 z-50 shadow-sm">
-                    <div className="max-w-7xl mx-auto flex justify-between items-center">
+                <nav className="bg-white/95 dark:bg-[#141414]/95 backdrop-blur-sm border-b-2 border-gray-100 dark:border-white/10 px-4 sm:px-6 h-16 sticky top-0 z-50 shadow-sm">
+                    <div className="max-w-7xl mx-auto h-full flex justify-between items-center gap-2">
                         {/* Branding Section */}
-                        <Link href="/dashboard?role=owner" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                            <div className="w-10 h-10 bg-gradient-to-br from-primary to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                                <span className="text-white text-xl font-bold">Q</span>
+                        <Link href="/dashboard?role=owner" className="flex items-center gap-2.5 sm:gap-3 min-w-0 hover:opacity-80 transition-opacity">
+                            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-primary to-orange-600 rounded-xl flex items-center justify-center shadow-lg shrink-0">
+                                <span className="text-white text-lg sm:text-xl font-bold">Q</span>
                             </div>
-                            <div>
-                                <h1 className="font-bold text-xl tracking-tight bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
+                            <div className="min-w-0">
+                                <h1 className="font-bold text-base sm:text-xl tracking-tight bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent truncate">
                                     QR Menu Dashboard
                                 </h1>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Management Portal</p>
+                                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium truncate">Management Portal</p>
                             </div>
                         </Link>
 
                         {/* User Actions */}
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
                             {/* Dark/Light mode toggle */}
                             <ThemeToggle inline />
 
@@ -72,14 +72,15 @@ export default function DashboardLayout({ children }) {
                                 </div>
                             </div>
 
-                            {/* Logout Button */}
+                            {/* Logout Button — ikon bulat saja di mobile, melebar dengan label mulai sm: */}
                             <button
                                 onClick={handleLogout}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600
+                                aria-label="Logout"
+                                className="flex items-center justify-center gap-2 w-9 h-9 sm:w-auto sm:h-auto sm:px-4 sm:py-2.5 bg-gradient-to-r from-red-500 to-red-600
                                          text-white font-semibold rounded-xl hover:from-red-600 hover:to-red-700
                                          transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95"
                             >
-                                <span className="text-lg">🚪</span>
+                                <span className="text-base sm:text-lg">🚪</span>
                                 <span className="hidden sm:inline">Logout</span>
                             </button>
                         </div>
