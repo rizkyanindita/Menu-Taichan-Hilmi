@@ -105,7 +105,7 @@ export default function DashboardLayout({ children }) {
                 <footer className="bg-white/80 dark:bg-[#141414]/80 backdrop-blur-sm border-t border-gray-100 dark:border-white/10 py-4 px-6 mt-auto">
                     <div className="max-w-7xl mx-auto text-center">
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                            © 2025 QR Menu App • Made with <span className="text-red-500">❤️</span>
+                            Menu Digital untuk solusi lebih cepat • Rizky Anindita 
                         </p>
                     </div>
                 </footer>
