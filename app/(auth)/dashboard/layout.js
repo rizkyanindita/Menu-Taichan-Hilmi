@@ -14,7 +14,7 @@ export default function DashboardLayout({ children }) {
             try {
                 const user = JSON.parse(savedUser);
                 if (user.role === "owner") {
-                    setUserName("Hilmi");
+                    setUserName(process.env.ownername);
                 } else if (user.role === "staff") {
                     setUserName("Staff");
                 } else {
